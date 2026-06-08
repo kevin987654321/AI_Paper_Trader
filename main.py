@@ -6,20 +6,8 @@ import config
 from modules import fetcher, ml_brain, llm_brain, execution
 
 def is_market_open():
-    """生理時鐘：判斷目前是否為台股開盤時間 (平日 09:00 ~ 13:30)"""
-    now = datetime.now()
-    
-    # 判斷是否為週末 (0是週一，5是週六，6是週日)
-    if now.weekday() >= 5:
-        return False
-        
-    # 判斷是否在 09:00 到 13:30 之間
-    market_start = dt_time(9, 0)
-    market_end = dt_time(13, 30)
-    
-    if market_start <= now.time() <= market_end:
-        return True
-    return False
+    """【今晚熬夜測試版】強制當作開盤中"""
+    return True
 
 def print_status_report():
     """戰情儀表板：讀取帳本並回報目前狀況"""
@@ -117,9 +105,12 @@ def endless_loop():
             
             if is_market_open():
                 run_trading_bot()
-                time.sleep(600) # 正式環境：每 10 分鐘掃描一次
+                
+                # 🛑 把這裡從 600 秒 (10分鐘) 改成 300 秒 (5分鐘)
+                time.sleep(300) 
             else:
-                time.sleep(3600) # 收盤時：每 1 小時醒來一次
+                # 收盤時：每 1 小時醒來檢查一次時間
+                time.sleep(3600) 
                 
         except Exception as e:
             print(f"⚠️ 系統發生例外錯誤: {e}")
