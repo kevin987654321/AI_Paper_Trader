@@ -20,7 +20,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.10'
+          python-version: '3.12'
           cache: 'pip' # 開啟快取，這樣每天跑的時候裝套件會快很多
 
       # 3. 安裝 requirements.txt 內的套件
