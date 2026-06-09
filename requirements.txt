@@ -1,6 +1,5 @@
 yfinance
 pandas
 pandas-ta
-google-genai
 beautifulsoup4
 google-generativeai
