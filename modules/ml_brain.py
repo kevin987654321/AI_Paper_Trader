@@ -31,7 +31,7 @@ def check_buy_signal(df):
     macd_signal = latest['MACDs_12_26_9']
 
     # 策略邏輯：超賣抄底 + 動能反轉
-    if rsi < 35 and macd > macd_signal:
+    if rsi < 45 and macd > macd_signal:
         print(f"💡 [武官判定] 強烈買進訊號！RSI={rsi:.1f} (超賣區) 且 MACD 呈現黃金交叉。")
         return True
     
@@ -39,21 +39,23 @@ def check_buy_signal(df):
 
 def check_sell_signal(df):
     """
-    判斷現在是不是該賣出？(停利機制)
+    判斷現在是不是該賣出？(停利機制：動能衰退才賣)
     """
     if df is None or len(df) < 2:
         return False
         
     latest = df.iloc[-1]
     
-    if 'RSI_14' not in latest:
+    # 改為檢查 MACD 欄位是否存在
+    if 'MACD_12_26_9' not in latest or 'MACDs_12_26_9' not in latest:
         return False
         
-    rsi = latest['RSI_14']
+    macd = latest['MACD_12_26_9']
+    macd_signal = latest['MACDs_12_26_9']
     
-    # 策略邏輯：RSI > 75 代表極度過熱，準備獲利了結
-    if rsi > 75:
-        print(f"💡 [武官判定] 過熱賣出訊號！RSI={rsi:.1f} (超買區)。")
+    # 策略邏輯：MACD 死亡交叉 (快線跌破慢線)，代表上漲動能消失，準備獲利了結
+    if macd < macd_signal:
+        print(f"💡 [武官判定] 動能轉弱賣出訊號！MACD 出現死亡交叉。")
         return True
         
     return False
