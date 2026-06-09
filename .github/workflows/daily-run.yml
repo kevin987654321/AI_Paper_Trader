@@ -2,10 +2,10 @@ name: Daily Python Script
 
 on:
   schedule:
-    # UTC 時間凌晨 1 點 = 台灣時間早上 9 點
-    - cron: '0,30 1-5 * * 1-5' # 台灣時間 9:00, 9:30, 10:00... 跑到 13:30
+    # 台灣時間 09:00 到 13:30，每半小時執行一次 (週一至週五)
+    - cron: '0,30 1-5 * * 1-5'
   workflow_dispatch: 
-    # 保留手動觸發按鈕，方便你隨時除錯
+    # 保留手動觸發按鈕，方便隨時除錯
 
 jobs:
   run-script:
@@ -16,12 +16,12 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # 2. 設定 Python 環境 (如果你是用其他版本，可以把 3.10 改掉)
+      # 2. 設定 Python 3.12 環境
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-          cache: 'pip' # 開啟快取，這樣每天跑的時候裝套件會快很多
+          cache: 'pip'
 
       # 3. 安裝 requirements.txt 內的套件
       - name: Install dependencies
@@ -29,7 +29,11 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
-      # 4. 執行你的主程式
+      # 4. 執行主程式，並讀取 GitHub Secrets 保險箱中的金鑰
       - name: Run main.py
+        env:
+          LINE_CHANNEL_ACCESS_TOKEN: ${{ secrets.LINE_CHANNEL_ACCESS_TOKEN }}
+          LINE_USER_ID: ${{ secrets.LINE_USER_ID }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
         run: |
           python main.py
