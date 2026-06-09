@@ -31,8 +31,8 @@ def analyze_sentiment(news_text):
         return True
 
     try:
-        # 統一使用新版 Client 寫法
-        client = genai.Client(api_key=config.GEMINI_API_KEY)
+        # 使用穩定版語法配置金鑰
+        genai.configure(api_key=config.GEMINI_API_KEY)
         
         prompt = f"""
         你現在是一位華爾街頂級的風險控管專家。
@@ -44,11 +44,9 @@ def analyze_sentiment(news_text):
         任務 2：基於上述分析，如果你認為發生了毀滅性風險，請在報告的最後一行獨立寫上：【判定結果：FALSE】。如果你認為沒有毀滅性風險，請在最後一行獨立寫上：【判定結果：TRUE】。
         """
         
-        # 使用最新的 gemini-2.5-flash 模型
-        response = client.models.generate_content(
-            model='gemini-2.5-flash',
-            contents=prompt
-        )
+        # 呼叫 2.5-flash 模型
+        model = genai.GenerativeModel('gemini-2.5-flash')
+        response = model.generate_content(prompt)
         
         analysis_text = response.text.strip()
         
@@ -72,7 +70,6 @@ def analyze_sentiment(news_text):
 
 def generate_daily_report():
     """讀取今日日誌與帳本，讓 Gemini 產生收盤總結報告 (盤後排程呼叫用)"""
-    # 統一從 config 拿金鑰，消滅 os.environ 找不到的問題
     api_key = config.GEMINI_API_KEY
     if not api_key:
         return "⚠️ 找不到 Gemini API Key，無法產生報告"
@@ -126,12 +123,10 @@ def generate_daily_report():
     """
     
     try:
-        # 同樣使用新版 Client 寫法與 2.5-flash 大腦
-        client = genai.Client(api_key=api_key)
-        response = client.models.generate_content(
-            model='gemini-2.5-flash',
-            contents=prompt
-        )
+        # 使用穩定版語法配置金鑰與模型
+        genai.configure(api_key=api_key)
+        model = genai.GenerativeModel('gemini-2.5-flash')
+        response = model.generate_content(prompt)
         return response.text.strip()
     except Exception as e:
         return f"⚠️ 收盤報告生成失敗：{e}"
