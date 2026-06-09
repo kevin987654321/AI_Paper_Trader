@@ -32,7 +32,7 @@ def run_trading_bot():
     # 1. 抓取最新價格
     df_data = fetcher.get_stock_data(config.TICKER)
     if df_data is None:
-        notifier.send_line_message("⚠️ 系統異常：無法抓取到歷史價格資料，已暫停運作。")
+        notifier.send_line_message("[ 系統異常 ]\n無法抓取到歷史價格資料，已暫停運作。")
         return 
         
     current_price = df_data['Close'].iloc[-1]
@@ -44,13 +44,13 @@ def run_trading_bot():
     
     current_cash, current_shares = get_ledger_status()
     
-    # 預設變數，準備給 LINE 報告用
-    action_str = "⚪ 繼續觀望"
+    # 預設變數 (移除 emoji，改為專業字眼)
+    action_str = "繼續觀望"
     reason_str = "無"
     
     # 3. 判斷進出場邏輯
     if ml_sell_signal and current_shares > 0:
-        action_str = "🔴 賣出停利"
+        action_str = "賣出停利"
         reason_str = "武官判斷：觸發技術面獲利了結條件"
         execution.log_trade("SELL", config.TICKER, current_price, current_shares)
         
@@ -65,12 +65,11 @@ def run_trading_bot():
         if not llm_signal:
             reason_str = "文官否決：偵測到市場負面情緒或總經風險"
         else:
-            # 計算購買股數
             max_loss_amount = current_cash * config.RISK_PER_TRADE
             shares_to_buy = int((max_loss_amount / 0.05) / current_price)
             
             if shares_to_buy > 0 and (shares_to_buy * current_price) <= current_cash:
-                action_str = "🟢 成功買進"
+                action_str = "成功買進"
                 reason_str = "文武雙全，確認買進訊號並執行虛擬下單"
                 execution.log_trade("BUY", config.TICKER, current_price, shares_to_buy)
             else:
@@ -81,20 +80,25 @@ def run_trading_bot():
     final_cash, final_shares = get_ledger_status()
     
     # 5. 組合排版精美的 LINE 訊息並發送
-    now_str = datetime.now().strftime("%Y-%m-%d %H:%M")
-    report_msg = f"""🤖 AI 交易員日報
-🕒 {now_str}
-------------------
-🎯 監控標的：{config.TICKER}
-💰 最新股價：{current_price:.1f} 元
-------------------
-📋 今日決策：{action_str}
-💡 詳細說明：
-{reason_str}
-------------------
-💼 帳戶概況
-💵 剩餘現金：{final_cash:,.0f} 元
-📦 目前庫存：{final_shares} 股"""
+    # 💡 修正時區問題：強制將 UTC 伺服器時間加上 8 小時
+    tw_time = datetime.utcnow() + pd.Timedelta(hours=8)
+    now_str = tw_time.strftime("%Y-%m-%d %H:%M")
+    
+    # 💡 使用極簡排版，避免文字擠在一起 (注意：這裡面的縮排請照抄，不要多按空格)
+    report_msg = f"""【AI 交易員戰情報告】
+時間：{now_str}
+
+[ 市場報價 ]
+標的：{config.TICKER}
+股價：{current_price:.1f} 元
+
+[ 系統決策 ]
+動作：{action_str}
+說明：{reason_str}
+
+[ 帳戶概況 ]
+現金：{final_cash:,.0f} 元
+庫存：{final_shares} 股"""
     
     notifier.send_line_message(report_msg)
     print("✅ 戰情報告已傳送至 LINE！")
