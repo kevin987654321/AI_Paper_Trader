@@ -80,25 +80,25 @@ def run_trading_bot():
     final_cash, final_shares = get_ledger_status()
     
     # 5. 組合排版精美的 LINE 訊息並發送
-    # 💡 修正時區問題：強制將 UTC 伺服器時間加上 8 小時
     tw_time = datetime.utcnow() + pd.Timedelta(hours=8)
     now_str = tw_time.strftime("%Y-%m-%d %H:%M")
     
-    # 💡 使用極簡排版，避免文字擠在一起 (注意：這裡面的縮排請照抄，不要多按空格)
-    report_msg = f"""【AI 交易員戰情報告】
-時間：{now_str}
+    # 💡 利用全形框線與縮排，建立明確的區塊感 (請直接完整複製這段 f-string)
+    report_msg = f"""📊｜AI 交易戰情報告
+🕒｜{now_str}
+━━━━━━━━━━━━━━
+【 📈 市場報價 】
+ ▸ 標的：{config.TICKER}
+ ▸ 股價：{current_price:.1f} 元
 
-[ 市場報價 ]
-標的：{config.TICKER}
-股價：{current_price:.1f} 元
+【 📋 系統決策 】
+ ▸ 動作：{action_str}
+ ▸ 說明：{reason_str}
 
-[ 系統決策 ]
-動作：{action_str}
-說明：{reason_str}
-
-[ 帳戶概況 ]
-現金：{final_cash:,.0f} 元
-庫存：{final_shares} 股"""
+【 💼 帳戶概況 】
+ ▸ 現金：{final_cash:,.0f} 元
+ ▸ 庫存：{final_shares} 股
+━━━━━━━━━━━━━━"""
     
     notifier.send_line_message(report_msg)
     print("✅ 戰情報告已傳送至 LINE！")
