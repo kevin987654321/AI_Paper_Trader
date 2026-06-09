@@ -12,24 +12,23 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # 1. 將你的 GitHub 程式碼拉取到虛擬環境中
       - name: Checkout repository
+        # 這裡加了 fetch-depth: 0，確保機器人有完整權限推回程式碼
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 
 
-      # 2. 設定 Python 3.12 環境
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.12'
           cache: 'pip'
 
-      # 3. 安裝 requirements.txt 內的套件
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
-      # 4. 執行主程式，並讀取 GitHub Secrets 保險箱中的金鑰
       - name: Run main.py
         env:
           LINE_CHANNEL_ACCESS_TOKEN: ${{ secrets.LINE_CHANNEL_ACCESS_TOKEN }}
@@ -37,3 +36,14 @@ jobs:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
         run: |
           python main.py
+
+      # ===== 新增這一段：把 data 資料夾的變動推回 GitHub =====
+      - name: Commit and push data changes
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action Bot"
+          # 只把 data 資料夾加進追蹤
+          git add data/
+          # 檢查有沒有檔案變動，有的話就 commit 並 push
+          git diff --quiet && git diff --staged --quiet || git commit -m "🤖 自動更新交易日誌與帳本"
+          git push
