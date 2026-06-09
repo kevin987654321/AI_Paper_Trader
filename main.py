@@ -90,11 +90,11 @@ def run_trading_bot():
 【 📈 市場報價 】
  ▸ 標的：{config.TICKER}
  ▸ 股價：{current_price:.1f} 元
-
+-------------------------
 【 📋 系統決策 】
  ▸ 動作：{action_str}
  ▸ 說明：{reason_str}
-
+-------------------------
 【 💼 帳戶概況 】
  ▸ 現金：{final_cash:,.0f} 元
  ▸ 庫存：{final_shares} 股
