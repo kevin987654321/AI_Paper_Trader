@@ -42,16 +42,31 @@ def run_trading_bot():
     ml_buy_signal = ml_brain.check_buy_signal(df_data)
     ml_sell_signal = ml_brain.check_sell_signal(df_data)
     
+    # --- 💡 新增：擷取最新指標數值，準備給儀表板使用 ---
+    latest_data = df_data.iloc[-1]
+    current_rsi = latest_data.get('RSI_14', 0)
+    macd = latest_data.get('MACD_12_26_9', 0)
+    macd_signal = latest_data.get('MACDs_12_26_9', 0)
+    
+    # 將 MACD 轉換成人類秒懂的「多空狀態」
+    if macd > macd_signal:
+        macd_status = "多頭 (快線在上)"
+    elif macd < macd_signal:
+        macd_status = "空頭 (快線在下)"
+    else:
+        macd_status = "平盤交纏"
+    # ---------------------------------------------------
+
     current_cash, current_shares = get_ledger_status()
     
-    # 預設變數 (移除 emoji，改為專業字眼)
+    # 預設變數
     action_str = "繼續觀望"
     reason_str = "無"
     
     # 3. 判斷進出場邏輯
     if ml_sell_signal and current_shares > 0:
         action_str = "賣出停利"
-        reason_str = "武官判斷：觸發技術面獲利了結條件"
+        reason_str = "武官判斷：動能轉弱，觸發獲利了結"
         execution.log_trade("SELL", config.TICKER, current_price, current_shares)
         
     elif not ml_buy_signal:
@@ -83,13 +98,17 @@ def run_trading_bot():
     tw_time = datetime.utcnow() + pd.Timedelta(hours=8)
     now_str = tw_time.strftime("%Y-%m-%d %H:%M")
     
-    # 💡 利用全形框線與縮排，建立明確的區塊感 (請直接完整複製這段 f-string)
+    # 💡 增加「武官儀表板」區塊
     report_msg = f"""📊｜AI 交易戰情報告
 🕒｜{now_str}
 ━━━━━━━━━━━━━━
 【 📈 市場報價 】
  ▸ 標的：{config.TICKER}
  ▸ 股價：{current_price:.1f} 元
+------------------------------
+【 🎛️ 武官儀表板 】
+ ▸ ＲＳＩ：{current_rsi:.1f}
+ ▸ 動能：{macd_status}
 ------------------------------
 【 📋 系統決策 】
  ▸ 動作：{action_str}
