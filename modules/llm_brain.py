@@ -64,8 +64,12 @@ def analyze_sentiment(news_text):
         return final_decision
             
     except Exception as e:
-        print(f"⚠️ 呼叫 Gemini API 時發生錯誤: {e}")
-        # 如果 API 故障，預設放行交由武官決定
+        error_msg = str(e)
+        if "429" in error_msg or "quota" in error_msg.lower():
+            print("⚠️ [文官異常] 呼叫 Gemini 失敗：API 額度已達上限。")
+        else:
+            print(f"⚠️ 呼叫 Gemini API 時發生錯誤: {e}")
+        # 如果 API 故障或限額，預設放行交由武官決定
         return True
 
 def generate_daily_report():
@@ -125,8 +129,14 @@ def generate_daily_report():
     try:
         # 使用穩定版語法配置金鑰與模型
         genai.configure(api_key=api_key)
-        model = genai.GenerativeModel('gemini-2.5-flash')
+        model = genai.GenerativeModel('gemini-2.5-flash')  # 或是 'gemini-1.5-flash'
         response = model.generate_content(prompt)
         return response.text.strip()
     except Exception as e:
+        error_msg = str(e)
+        # 💡 攔截 429 或是包含 quota 的超額錯誤，換成乾淨的自訂訊息
+        if "429" in error_msg or "quota" in error_msg.lower():
+            return "⚠️ 收盤報告生成失敗：Gemini額度已達上限"
+            
+        # 其他不常見的非額度錯誤才顯示原始訊息
         return f"⚠️ 收盤報告生成失敗：{e}"
