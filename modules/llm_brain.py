@@ -44,8 +44,8 @@ def analyze_sentiment(news_text):
         任務 2：基於上述分析，如果你認為發生了毀滅性風險，請在報告的最後一行獨立寫上：【判定結果：FALSE】。如果你認為沒有毀滅性風險，請在最後一行獨立寫上：【判定結果：TRUE】。
         """
         
-        # 呼叫 2.5-flash 模型
-        model = genai.GenerativeModel('gemini-1.5-flash')
+        # 呼叫 3.5-flash 模型
+        model = genai.GenerativeModel('gemini-3.5-flash')
         response = model.generate_content(prompt)
         
         analysis_text = response.text.strip()
@@ -129,7 +129,7 @@ def generate_daily_report():
     try:
         # 使用穩定版語法配置金鑰與模型
         genai.configure(api_key=api_key)
-        model = genai.GenerativeModel('gemini-1.5-flash')  # 或是 'gemini-1.5-flash'
+        model = genai.GenerativeModel('gemini-3.5-flash') 
         response = model.generate_content(prompt)
         return response.text.strip()
     except Exception as e:
