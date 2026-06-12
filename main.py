@@ -198,6 +198,8 @@ def main_market_scan():
             total_active_positions = get_total_active_positions()
             time.sleep(2)
             
+            from modules import github_sync
+            github_sync.push_to_github("🤖 巡邏完畢：更新最新帳本")
         print(f"[{datetime.now().strftime('%H:%M:%S')}] ✅ 本次全市場掃描與下單判定完畢，系統安全結束。")
     except Exception as e:
         error_msg = f"⚠️ 系統運行發生嚴重錯誤: {e}"
