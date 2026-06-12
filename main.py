@@ -13,20 +13,29 @@ def log_routine_check(ticker, price, status):
         f.write(f"[{now}] {ticker} @ {price:.1f} 元 -> {status}\n")
 
 def get_ledger_status():
-    """讀取並計算帳戶目前狀況"""
+    """讀取並計算帳戶目前狀況與持股成本"""
     try:
         df = pd.read_csv(config.LEDGER_PATH)
         if len(df) == 0:
-            return 100000, 0 # 假設初始本金 10 萬
+            return 100000, 0, 0
         cash_left = df.iloc[-1]["Cash_Left"]
         buy_shares = df[df['Action'] == 'BUY']['Shares'].sum()
         sell_shares = df[df['Action'] == 'SELL']['Shares'].sum()
-        return cash_left, buy_shares - sell_shares
+        current_shares = buy_shares - sell_shares
+        
+        # 抓取最後一次買進的價格作為成本
+        avg_cost = 0
+        if current_shares > 0:
+            buy_records = df[df['Action'] == 'BUY']
+            if not buy_records.empty:
+                avg_cost = buy_records.iloc[-1]['Price']
+                
+        return cash_left, current_shares, avg_cost
     except (FileNotFoundError, pd.errors.EmptyDataError):
-        return 100000, 0
+        return 100000, 0, 0
 
 def run_trading_bot():
-    """正式版交易邏輯"""
+    """正式版交易邏輯 (加入停損停利防護網)"""
     print(f"[{datetime.now().strftime('%H:%M:%S')}] 正在執行市場掃描...")
     
     # 1. 抓取最新價格
@@ -42,33 +51,46 @@ def run_trading_bot():
     ml_buy_signal = ml_brain.check_buy_signal(df_data)
     ml_sell_signal = ml_brain.check_sell_signal(df_data)
     
-    # --- 💡 新增：擷取最新指標數值，準備給儀表板使用 ---
+    # 擷取最新指標數值
     latest_data = df_data.iloc[-1]
-    current_rsi = latest_data.get('RSI_14', 0)
+    current_rsi = latest_data.get('RSI_14', latest_data.get('RSI_21', 0)) # 兼容不同週期設定
     macd = latest_data.get('MACD_12_26_9', 0)
     macd_signal = latest_data.get('MACDs_12_26_9', 0)
     
-    # 將 MACD 轉換成人類秒懂的「多空狀態」
     if macd > macd_signal:
         macd_status = "多頭 (快線在上)"
     elif macd < macd_signal:
         macd_status = "空頭 (快線在下)"
     else:
         macd_status = "平盤交纏"
-    # ---------------------------------------------------
 
-    current_cash, current_shares = get_ledger_status()
+    current_cash, current_shares, avg_cost = get_ledger_status()
     
-    # 預設變數
     action_str = "繼續觀望"
     reason_str = "無"
     
     # 3. 判斷進出場邏輯
-    if ml_sell_signal and current_shares > 0:
-        action_str = "賣出停利"
-        reason_str = "武官判斷：動能轉弱，觸發獲利了結"
-        execution.log_trade("SELL", config.TICKER, current_price, current_shares)
+    if current_shares > 0:
+        # 計算停損與停利門檻
+        take_profit_price = avg_cost * (1 + config.TAKE_PROFIT_PCT)
+        stop_loss_price = avg_cost * (1 - config.STOP_LOSS_PCT)
         
+        if current_price >= take_profit_price:
+            action_str = "🎯 賣出停利"
+            reason_str = f"觸發 {config.TAKE_PROFIT_PCT*100}% 停利點 (成本 {avg_cost:.1f})"
+            execution.log_trade("SELL", config.TICKER, current_price, current_shares)
+        elif current_price <= stop_loss_price:
+            action_str = "🛡️ 賣出停損"
+            reason_str = f"觸發 {config.STOP_LOSS_PCT*100}% 停損點 (成本 {avg_cost:.1f})"
+            execution.log_trade("SELL", config.TICKER, current_price, current_shares)
+        elif ml_sell_signal:
+            action_str = "⚠️ 動能轉弱賣出"
+            reason_str = f"MACD 死亡交叉，提早拔檔 (成本 {avg_cost:.1f})"
+            execution.log_trade("SELL", config.TICKER, current_price, current_shares)
+        else:
+            action_str = "🤝 繼續抱牢"
+            reason_str = f"尚未觸發停損/停利 (目前成本: {avg_cost:.1f})"
+            
     elif not ml_buy_signal:
         reason_str = "武官判定：技術面無進場訊號"
         
@@ -80,25 +102,29 @@ def run_trading_bot():
         if not llm_signal:
             reason_str = "文官否決：偵測到市場負面情緒或總經風險"
         else:
+            # 💡 最強動態資金控管公式：(帳戶現金 * 2%) / 2%停損價差
             max_loss_amount = current_cash * config.RISK_PER_TRADE
-            shares_to_buy = int((max_loss_amount / 0.05) / current_price)
+            shares_to_buy = int((max_loss_amount / config.STOP_LOSS_PCT) / current_price)
             
-            if shares_to_buy > 0 and (shares_to_buy * current_price) <= current_cash:
-                action_str = "成功買進"
-                reason_str = "文武雙全，確認買進訊號並執行虛擬下單"
+            # 如果算出來的購買金額大於手上現金，就改為 All-in
+            if (shares_to_buy * current_price) > current_cash:
+                shares_to_buy = int(current_cash / current_price)
+            
+            if shares_to_buy > 0:
+                action_str = "✅ 成功買進"
+                reason_str = f"確認訊號！動態控管買入 {shares_to_buy} 股"
                 execution.log_trade("BUY", config.TICKER, current_price, shares_to_buy)
             else:
                 reason_str = "買進訊號確認，但現金不足以承擔此次交易"
 
     # 4. 交易結束後，寫入日誌並抓取最新餘額
     log_routine_check(config.TICKER, current_price, f"{action_str} ({reason_str})")
-    final_cash, final_shares = get_ledger_status()
+    final_cash, final_shares, _ = get_ledger_status()
     
     # 5. 組合排版精美的 LINE 訊息並發送
     tw_time = datetime.utcnow() + pd.Timedelta(hours=8)
     now_str = tw_time.strftime("%Y-%m-%d %H:%M")
     
-    # 💡 增加「武官儀表板」區塊
     report_msg = f"""📊｜AI 交易戰情報告
 🕒｜{now_str}
 ━━━━━━━━━━━━━━
@@ -123,7 +149,7 @@ def run_trading_bot():
     print("✅ 戰情報告已傳送至 LINE！")
 
 def main_single_run():
-    """單次執行模式的入口 (排程精準呼叫，不需死等)"""
+    """單次執行模式的入口"""
     execution.init_ledger() 
     print("啟動交易邏輯...")
     
