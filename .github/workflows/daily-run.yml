@@ -39,8 +39,12 @@ jobs:
         run: |
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action Bot"
-          # 只把 data 資料夾加進追蹤
+          
+          # 1. 追蹤帳本與日誌
           git add data/
+          # 2. 追蹤 AI 的動態參數 (加上 || true，就算檔案還沒生成也不會報錯)
+          git add dynamic_config.json || true
+          
           # 檢查有沒有檔案變動，有的話就 commit 並 push
-          git diff --quiet && git diff --staged --quiet || git commit -m "🤖 自動更新交易日誌與帳本"
+          git diff --quiet && git diff --staged --quiet || git commit -m "🤖 自動更新：交易日誌與動態參數"
           git push
