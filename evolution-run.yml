@@ -1,0 +1,43 @@
+name: Weekly AI Evolution Script
+
+on:
+  workflow_dispatch: 
+    # 同樣保留手動觸發，方便透過 cron-job.org 呼叫
+
+jobs:
+  run-evolution:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Run evolution.py
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+        run: |
+          python evolution.py
+
+      - name: Commit and push new parameters
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action Bot"
+          
+          # 專門追蹤 AI 教練寫入的新參數檔
+          git add dynamic_config.json || true
+          
+          git diff --quiet && git diff --staged --quiet || git commit -m "🧬 AI 進化完畢：套用新交易參數"
+          git push
