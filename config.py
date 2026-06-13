@@ -1,6 +1,12 @@
 # 🏆 新增：多重標的雷達觀察名單 (可自由增減台股標的)
 WATCHLIST = ["2330.TW", "2317.TW", "2454.TW", "2308.TW", "2382.TW"] 
 
+# === A/B 測試：靜態對照組專用參數 (永遠不變) ===
+LEDGER_STATIC_PATH = "data/paper_ledger_static.csv"
+STATIC_RISK_PER_TRADE = 0.02   # 永遠固定單筆風險 2%
+STATIC_STOP_LOSS_PCT = 0.02    # 永遠固定停損 2%
+STATIC_TAKE_PROFIT_PCT = 0.10  # 永遠固定停利 10%
+
 MAX_POSITIONS = 3         # 🛡️ 防線 1：整個帳戶最多同時持有 3 檔股票部位
 POSITION_SIZE_PCT = 0.3   # 🛡️ 防線 2：單一檔股票最多只能吃掉「當下可用現金的 30%」，避免一檔就把錢扣光
 
