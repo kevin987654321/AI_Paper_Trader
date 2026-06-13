@@ -1,17 +1,17 @@
 import os
+import pandas as pd
 from datetime import datetime
 import config
 import google.generativeai as genai
 
+# 初始化 Gemini 模型
+genai.configure(api_key=config.GEMINI_API_KEY)
+model = genai.GenerativeModel('gemini-3.5-flash')
+
 def log_gemini_analysis(news_text, analysis_result, final_decision):
-    """
-    將 Gemini 的分析過程記錄到日誌檔中
-    """
+    """將 Gemini 的分析過程記錄到日誌檔中"""
     log_path = "data/gemini_analysis_log.txt"
-    
-    # 確保 data 資料夾存在
-    if not os.path.exists("data"):
-        os.makedirs("data")
+    os.makedirs("data", exist_ok=True)
         
     with open(log_path, "a", encoding="utf-8") as f:
         f.write("==================================================\n")
@@ -24,119 +24,83 @@ def log_gemini_analysis(news_text, analysis_result, final_decision):
         f.write("==================================================\n\n")
 
 def analyze_sentiment(news_text):
-    """
-    呼叫 Gemini 判讀新聞情緒，並產生詳細分析報告 (盤中武官呼叫用)
-    """
-    if not news_text or len(news_text) < 10:
-        return True
-
-    try:
-        # 使用穩定版語法配置金鑰
-        genai.configure(api_key=config.GEMINI_API_KEY)
+    """呼叫 Gemini 判讀新聞情緒，作為大盤風險最後一道防線"""
+    if not news_text:
+        return True 
         
-        prompt = f"""
-        你現在是一位華爾街頂級的風險控管專家。
-        請閱讀以下關於【{config.TICKER}】或大盤的財經新聞：
-        
-        {news_text}
-        
-        任務 1：請用繁體中文，簡短分析這則新聞是否包含「系統性崩盤」、「黑天鵝事件」或「毀滅性打擊（如假帳、破產、產線全毀）」。(字數限制：100字以內)
-        任務 2：基於上述分析，如果你認為發生了毀滅性風險，請在報告的最後一行獨立寫上：【判定結果：FALSE】。如果你認為沒有毀滅性風險，請在最後一行獨立寫上：【判定結果：TRUE】。
-        """
-        
-        # 呼叫 3.5-flash 模型
-        model = genai.GenerativeModel('gemini-3.5-flash')
-        response = model.generate_content(prompt)
-        
-        analysis_text = response.text.strip()
-        
-        # 解析最後一行，抓取最終判定
-        if "判定結果：FALSE" in analysis_text:
-            final_decision = False
-            print("🚨 [文官警告] Gemini 偵測到重大市場風險，已將分析報告寫入日誌！")
-        else:
-            final_decision = True
-            print("✅ [文官放行] Gemini 判定目前無重大系統性風險，分析報告已記錄。")
-            
-        # 將過程寫入日誌檔
-        log_gemini_analysis(news_text, analysis_text, final_decision)
-            
-        return final_decision
-            
-    except Exception as e:
-        error_msg = str(e)
-        if "429" in error_msg or "quota" in error_msg.lower():
-            print("⚠️ [文官異常] 呼叫 Gemini 失敗：API 額度已達上限。")
-        else:
-            print(f"⚠️ 呼叫 Gemini API 時發生錯誤: {e}")
-        # 如果 API 故障或限額，預設放行交由武官決定
-        return True
-
-def generate_daily_report():
-    """讀取今日日誌與帳本，讓 Gemini 產生收盤總結報告 (盤後排程呼叫用)"""
-    api_key = config.GEMINI_API_KEY
-    if not api_key:
-        return "⚠️ 找不到 Gemini API Key，無法產生報告"
-
-    # 取得今天日期的字串 (例如 "06/10")，用來過濾日誌
-    today_str = datetime.now().strftime("%m/%d")
-    
-    # 1. 讀取巡邏日誌 (只抓今天的紀錄)
-    patrol_logs = ""
-    try:
-        with open("data/patrol_log.txt", "r", encoding="utf-8") as f:
-            lines = f.readlines()
-            today_lines = [line for line in lines if today_str in line]
-            patrol_logs = "".join(today_lines)
-    except Exception:
-        patrol_logs = "無今日巡邏紀錄"
-
-    # 2. 讀取帳本
-    ledger_logs = ""
-    try:
-        with open("data/paper_ledger.csv", "r", encoding="utf-8") as f:
-            ledger_logs = f.read()
-    except Exception:
-        ledger_logs = "無帳本紀錄"
-
-    # 3. 組合給 Gemini 的 Prompt 模板
     prompt = f"""
-    你是一位專業的 AI 股票交易員。現在台股已經收盤，請根據以下的「今日巡邏日誌」與「歷史帳本」，
-    寫一份大約 150 字的【台股收盤總結報告】。
+    你是一位華爾街的量化風險控管專家。
+    請分析以下關於這檔股票的最新新聞：
+    {news_text}
+    
+    請問這些新聞中，是否包含「極度致命的利空」（例如：假帳、工廠大火、高層被捕、掉大單）？
+    如果只是普通的營收衰退、外資降評、股價波動，請視為正常市場雜訊。
+    
+    請先給出簡短的分析理由（50字內），最後在獨立的一行只輸出 "TRUE" (代表安全，可以買進) 或 "FALSE" (代表極度危險，禁止買進)。
+    """
+    try:
+        response = model.generate_content(prompt)
+        result_text = response.text.strip()
+        final_decision = "TRUE" in result_text.upper()
+        log_gemini_analysis(news_text, result_text, final_decision)
+        return final_decision
+    except Exception as e:
+        print(f"⚠️ Gemini API 發生錯誤: {e}")
+        return True # 若 API 壞掉，預設不阻擋武官交易
 
-    【今日巡邏日誌】
-    {patrol_logs}
+def generate_daily_summary():
+    """盤後產生 4D 矩陣總結報告 (給 daily_report.py 呼叫)"""
+    today_str = datetime.now().strftime("%Y-%m-%d")
+    
+    # 讀取 4 個平行宇宙的最新狀態與今日交易
+    ledger_summary = ""
+    groups = {
+        "🚀 DYN_1 (AI 積極)": getattr(config, 'LEDGER_DYN_1', "data/ledger_dyn_1_agg.csv"),
+        "🛡️ DYN_2 (AI 穩健)": getattr(config, 'LEDGER_DYN_2', "data/ledger_dyn_2_con.csv"),
+        "⚔️ STA_1 (靜態積極)": getattr(config, 'LEDGER_STA_1', "data/ledger_sta_1_agg.csv"),
+        "🧱 STA_2 (靜態穩健)": getattr(config, 'LEDGER_STA_2', "data/ledger_sta_2_con.csv")
+    }
+    
+    for name, path in groups.items():
+        try:
+            df = pd.read_csv(path)
+            if not df.empty:
+                cash = df.iloc[-1]["Cash_Left"]
+                profit = cash - getattr(config, 'INITIAL_CAPITAL', 100000)
+                
+                # 抓出今天的交易紀錄
+                today_trades = df[df['Date'].str.contains(today_str)]
+                trade_count = len(today_trades)
+                
+                ledger_summary += f"【{name}】 總資產: {cash:,.0f} (淨利 {profit:,.0f}) | 今日交易筆數: {trade_count}\n"
+                if trade_count > 0:
+                    for _, row in today_trades.iterrows():
+                        ledger_summary += f"  - {row['Action']} {row['Shares']}股 {row['Ticker']} @ {row['Price']}元\n"
+        except Exception:
+            ledger_summary += f"【{name}】 尚未建立或讀取失敗\n"
 
-    【歷史帳本】
-    {ledger_logs}
+    # 組裝給 Gemini 的 Prompt
+    prompt = f"""
+    你是一位頂級的避險基金經理人。現在台股已經收盤，你的 4 支量化交易機器人跑出了以下成績。
+    請根據「4D 平行宇宙戰果」，寫一份大約 150~200 字的【台股收盤總結報告】給老闆。
+
+    【今日 4D 宇宙戰果】
+    {ledger_summary}
 
     請嚴格遵守以下輸出模板（直接輸出文字，絕對不要加上 Markdown 的 ``` 符號）：
 
-    📝｜AI 交易員收盤總結
-    📅｜日期：(填入今日日期)
+    📝｜AI 基金經理人收盤總結
+    📅｜日期：{today_str}
     ━━━━━━━━━━━━━━
-    【 🎯 今日操作回顧 】
-    (請判讀日誌，用生動、專業的口吻總結今天有沒有買賣，以及主要的原因。例如：今日大盤震盪，雖然武官持續監控，但動能未達買進標準，故全日維持空手觀望。)
+    【 🎯 今日矩陣操作回顧 】
+    (請判讀上方數據，用專業口吻總結今天這四組有沒有進行買賣。例如：今日市場震盪，AI 積極組率先觸發停損，但穩健組成功避開風險，雙方展現不同調性...等)
 
-    【 💰 帳戶最終狀態 】
-    (請判讀帳本，列出目前最新現金結餘與庫存股數)
-
-    【 🔮 明日展望 】
-    (請根據今日的技術面狀態，給出一句簡短的明日策略預告，例如：明日若持續下探將關注 RSI 是否落入超賣區。)
+    【 💰 宇宙淨值戰況 】
+    (列出各組目前的獲利狀況，並做一句精闢的點評，例如：目前由 STA_1 靜態積極組暫居獲利王寶座)
     ━━━━━━━━━━━━━━
     """
-    
     try:
-        # 使用穩定版語法配置金鑰與模型
-        genai.configure(api_key=api_key)
-        model = genai.GenerativeModel('gemini-3.5-flash') 
         response = model.generate_content(prompt)
         return response.text.strip()
     except Exception as e:
-        error_msg = str(e)
-        # 💡 攔截 429 或是包含 quota 的超額錯誤，換成乾淨的自訂訊息
-        if "429" in error_msg or "quota" in error_msg.lower():
-            return "⚠️ 收盤報告生成失敗：Gemini額度已達上限"
-            
-        # 其他不常見的非額度錯誤才顯示原始訊息
-        return f"⚠️ 收盤報告生成失敗：{e}"
+        return f"⚠️ 產生報告失敗: {e}"
