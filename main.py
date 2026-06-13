@@ -5,22 +5,22 @@ from datetime import datetime
 import config
 from modules import fetcher, ml_brain, llm_brain, execution, notifier
 
-def log_routine_check(ticker, price, status):
-    """【系統巡邏日誌】不管有沒有買賣，都留下一行極簡紀錄"""
+def log_routine_check(ticker, price, status, is_static=False):
+    """【系統巡邏日誌】區分宇宙寫入"""
     os.makedirs("data", exist_ok=True) 
+    prefix = "[STATIC]" if is_static else "[DYNAMIC]"
     with open("data/patrol_log.txt", "a", encoding="utf-8") as f:
         now = datetime.now().strftime("%m/%d %H:%M")
-        f.write(f"[{now}] {ticker} @ {price:.1f} 元 -> {status}\n")
+        f.write(f"{prefix} [{now}] {ticker} @ {price:.1f} 元 -> {status}\n")
 
-def get_ticker_ledger_status(ticker):
-    """讀取並計算【特定股票】的目前狀況與持股成本"""
+def get_ticker_ledger_status(ticker, is_static=False):
+    """讀取【指定宇宙】的目前狀況與持股成本"""
+    path = getattr(config, 'LEDGER_STATIC_PATH', "data/paper_ledger_static.csv") if is_static else config.LEDGER_PATH
     try:
-        df = pd.read_csv(config.LEDGER_PATH)
+        df = pd.read_csv(path)
         if len(df) == 0:
             return config.INITIAL_CAPITAL, 0, 0
-        
         cash_left = df.iloc[-1]["Cash_Left"]
-        
         ticker_df = df[df['Ticker'] == ticker]
         buy_shares = ticker_df[ticker_df['Action'] == 'BUY']['Shares'].sum()
         sell_shares = ticker_df[ticker_df['Action'] == 'SELL']['Shares'].sum()
@@ -31,21 +31,18 @@ def get_ticker_ledger_status(ticker):
             buy_records = ticker_df[ticker_df['Action'] == 'BUY']
             if not buy_records.empty:
                 avg_cost = buy_records.iloc[-1]['Price']
-                
         return cash_left, current_shares, avg_cost
     except (FileNotFoundError, pd.errors.EmptyDataError):
         return config.INITIAL_CAPITAL, 0, 0
 
-def get_total_active_positions():
-    """計算目前整個帳戶總共持有了幾檔不同的股票部位"""
+def get_total_active_positions(is_static=False):
+    """計算【指定宇宙】的總持倉數"""
+    path = getattr(config, 'LEDGER_STATIC_PATH', "data/paper_ledger_static.csv") if is_static else config.LEDGER_PATH
     try:
-        df = pd.read_csv(config.LEDGER_PATH)
-        if len(df) == 0:
-            return 0
-        
+        df = pd.read_csv(path)
+        if len(df) == 0: return 0
         all_tickers = df[df['Ticker'] != 'NONE']['Ticker'].unique()
         active_count = 0
-        
         for ticker in all_tickers:
             ticker_df = df[df['Ticker'] == ticker]
             buy_shares = ticker_df[ticker_df['Action'] == 'BUY']['Shares'].sum()
@@ -56,146 +53,143 @@ def get_total_active_positions():
     except Exception:
         return 0
 
-def run_trading_bot_for_ticker(ticker, total_active_positions):
-    """針對單一股票執行技術分析與交易決策"""
-    print(f" 正在掃描標的: {ticker}...")
+def evaluate_strategy(ticker, current_price, df_data, ml_buy_signal, llm_signal, is_static):
+    """核心：根據帶入的宇宙(is_static)，套用不同參數與決策"""
+    # 決定要用哪一套參數
+    sl_pct = getattr(config, 'STATIC_STOP_LOSS_PCT', 0.02) if is_static else config.STOP_LOSS_PCT
+    tp_pct = getattr(config, 'STATIC_TAKE_PROFIT_PCT', 0.10) if is_static else config.TAKE_PROFIT_PCT
+    risk_pct = getattr(config, 'STATIC_RISK_PER_TRADE', 0.02) if is_static else config.RISK_PER_TRADE
     
-    # 1. 抓取最新價格
+    current_cash, current_shares, avg_cost = get_ticker_ledger_status(ticker, is_static)
+    total_active = get_total_active_positions(is_static)
+    
+    action_str = "繼續觀望"
+    reason_str = "無"
+    should_notify = False
+    
+    if current_shares > 0:
+        # 💡 防吵機制：有股票才去檢查賣出訊號
+        ml_sell_signal = ml_brain.check_sell_signal(df_data)
+        
+        take_profit_price = avg_cost * (1 + tp_pct)
+        stop_loss_price = avg_cost * (1 - sl_pct)
+        
+        if current_price >= take_profit_price:
+            action_str = "🎯 賣出停利"
+            reason_str = f"觸發 {tp_pct*100}% 停利點 (成本 {avg_cost:.1f})"
+            execution.log_trade("SELL", ticker, current_price, current_shares, is_static)
+            should_notify = True
+        elif current_price <= stop_loss_price:
+            action_str = "🛡️ 賣出停損"
+            reason_str = f"觸發 {sl_pct*100}% 停損點 (成本 {avg_cost:.1f})"
+            execution.log_trade("SELL", ticker, current_price, current_shares, is_static)
+            should_notify = True
+        elif ml_sell_signal:
+            action_str = "⚠️ 動能拔檔"
+            reason_str = f"動能轉弱，提早出場 (成本 {avg_cost:.1f})"
+            execution.log_trade("SELL", ticker, current_price, current_shares, is_static)
+            should_notify = True
+        else:
+            action_str = "🤝 繼續抱牢"
+            reason_str = f"防線 [{sl_pct*100}% / {tp_pct*100}%] 尚未觸發"
+            should_notify = True 
+            
+    elif not ml_buy_signal:
+        reason_str = "技術面無進場訊號"
+        
+    else:
+        max_positions = getattr(config, 'MAX_POSITIONS', 3)
+        if total_active >= max_positions:
+            reason_str = f"達持倉上限 ({max_positions}檔)"
+        elif not llm_signal:
+            reason_str = "文官否決進場"
+        else:
+            max_loss_amount = current_cash * risk_pct
+            shares_to_buy = int((max_loss_amount / sl_pct) / current_price)
+            
+            position_size_pct = getattr(config, 'POSITION_SIZE_PCT', 0.3)
+            max_alloc_cash = current_cash * position_size_pct
+            if (shares_to_buy * current_price) > max_alloc_cash:
+                shares_to_buy = int(max_alloc_cash / current_price)
+            
+            if shares_to_buy > 0:
+                action_str = "✅ 成功買進"
+                reason_str = f"動態配置買入 {shares_to_buy} 股 (風控 {risk_pct*100}%)"
+                execution.log_trade("BUY", ticker, current_price, shares_to_buy, is_static)
+                should_notify = True
+            else:
+                reason_str = "可用現金不足分配"
+
+    log_routine_check(ticker, current_price, f"{action_str} ({reason_str})", is_static)
+    final_cash, final_shares, _ = get_ticker_ledger_status(ticker, is_static)
+    
+    return action_str, reason_str, should_notify, final_cash, final_shares
+
+def run_trading_bot_for_ticker(ticker):
+    """執行市場掃描，並同時結算雙宇宙的戰果"""
+    print(f"\n 正在掃描標的: {ticker}...")
+    
     df_data = fetcher.get_stock_data(ticker)
     if df_data is None or df_data.empty:
-        print(f"⚠️ 無法抓取到 {ticker} 的歷史價格資料，跳過。")
+        print(f"⚠️ 無法抓取資料，跳過。")
         return 
         
     current_price = df_data['Close'].iloc[-1]
-    
-    # 2. 武官計算指標
     df_data = ml_brain.calculate_indicators(df_data)
-    
-    # 💡 核心修正：一開始【只檢查買進訊號】，不檢查賣出！這樣就不會亂印死亡交叉警告了
     ml_buy_signal = ml_brain.check_buy_signal(df_data)
     
+    # 讀取技術面狀態供戰報使用
     latest_data = df_data.iloc[-1]
     current_rsi = latest_data.get('RSI_14', latest_data.get('RSI_21', 0))
     macd = latest_data.get('MACD_12_26_9', 0)
     macd_signal = latest_data.get('MACDs_12_26_9', 0)
-    
-    if macd > macd_signal:
-        macd_status = "多頭 (快線在上)"
-    elif macd < macd_signal:
-        macd_status = "空頭 (快線在下)"
-    else:
-        macd_status = "平盤交纏"
+    macd_status = "多頭" if macd > macd_signal else ("空頭" if macd < macd_signal else "平盤")
 
-    current_cash, current_shares, avg_cost = get_ticker_ledger_status(ticker)
-    
-    action_str = "繼續觀望"
-    reason_str = "無"
-    should_notify = False 
-    
-    # 3. 判斷進出場邏輯
-    if current_shares > 0:
-        # 💡 核心修正：只有在確定手上有庫存時，才叫武官檢查是不是該賣了！
-        ml_sell_signal = ml_brain.check_sell_signal(df_data)
-        
-        take_profit_price = avg_cost * (1 + config.TAKE_PROFIT_PCT)
-        stop_loss_price = avg_cost * (1 - config.STOP_LOSS_PCT)
-        
-        if current_price >= take_profit_price:
-            action_str = "🎯 賣出停利"
-            reason_str = f"觸發 {config.TAKE_PROFIT_PCT*100}% 停利點 (成本 {avg_cost:.1f})"
-            execution.log_trade("SELL", ticker, current_price, current_shares)
-            should_notify = True
-        elif current_price <= stop_loss_price:
-            action_str = "🛡️ 賣出停損"
-            reason_str = f"觸發 {config.STOP_LOSS_PCT*100}% 停損點 (成本 {avg_cost:.1f})"
-            execution.log_trade("SELL", ticker, current_price, current_shares)
-            should_notify = True
-        elif ml_sell_signal:
-            action_str = "⚠️ 動能轉弱賣出"
-            reason_str = f"MACD 死亡交叉，提早拔檔 (成本 {avg_cost:.1f})"
-            execution.log_trade("SELL", ticker, current_price, current_shares)
-            should_notify = True
-        else:
-            action_str = "🤝 繼續抱牢"
-            reason_str = f"尚未觸發停損/停利 (目前成本: {avg_cost:.1f})"
-            should_notify = True 
-            
-    elif not ml_buy_signal:
-        reason_str = "武官判定：技術面無進場訊號"
-        
-    else:
-        max_positions = getattr(config, 'MAX_POSITIONS', 3)
-        if total_active_positions >= max_positions:
-            reason_str = f"武官看好，但目前持部位數已達上限 ({max_positions}檔)，放棄進場以控管風險"
-        else:
-            print(f"📈 武官看好 {ticker}！呼叫文官(Gemini)進行二次確認...")
-            real_news = fetcher.get_latest_news(ticker)
-            llm_signal = llm_brain.analyze_sentiment(real_news)
-            
-            if not llm_signal:
-                reason_str = "文官否決：偵測到市場負面情緒或總經風險"
-            else:
-                max_loss_amount = current_cash * config.RISK_PER_TRADE
-                shares_to_buy = int((max_loss_amount / config.STOP_LOSS_PCT) / current_price)
-                
-                position_size_pct = getattr(config, 'POSITION_SIZE_PCT', 0.3)
-                max_alloc_cash = current_cash * position_size_pct
-                if (shares_to_buy * current_price) > max_alloc_cash:
-                    shares_to_buy = int(max_alloc_cash / current_price)
-                
-                if shares_to_buy > 0:
-                    action_str = "✅ 成功買進"
-                    reason_str = f"確認訊號！動態控管買入 {shares_to_buy} 股"
-                    execution.log_trade("BUY", ticker, current_price, shares_to_buy)
-                    should_notify = True
-                else:
-                    reason_str = "買進訊號確認，但剩餘可用現金不足"
+    # 如果有買進訊號，才呼叫文官 (省 API 額度)
+    llm_signal = True
+    if ml_buy_signal:
+        print(f"📈 武官看好 {ticker}！呼叫文官(Gemini)進行二次確認...")
+        real_news = fetcher.get_latest_news(ticker)
+        llm_signal = llm_brain.analyze_sentiment(real_news)
 
-    # 4. 寫入日誌
-    log_routine_check(ticker, current_price, f"{action_str} ({reason_str})")
-    
-    # 5. LINE 通知發送邏輯
-    if should_notify:
-        final_cash, final_shares, _ = get_ticker_ledger_status(ticker)
+    # 🌐 進入雙宇宙決策引擎
+    dyn_action, dyn_reason, dyn_notify, dyn_cash, dyn_shares = evaluate_strategy(
+        ticker, current_price, df_data, ml_buy_signal, llm_signal, is_static=False)
+        
+    sta_action, sta_reason, sta_notify, sta_cash, sta_shares = evaluate_strategy(
+        ticker, current_price, df_data, ml_buy_signal, llm_signal, is_static=True)
+
+    # 只要任何一個宇宙發生變化，就發送統整版 LINE 戰報
+    if dyn_notify or sta_notify:
         tw_time = datetime.utcnow() + pd.Timedelta(hours=8)
         now_str = tw_time.strftime("%Y-%m-%d %H:%M")
         
-        report_msg = f"""📊｜AI 交易戰情報告
+        report_msg = f"""📊｜A/B 測試戰情報告
 🕒｜{now_str}
+▸ 標的：{ticker} @ {current_price:.1f}
+▸ 指標：RSI {current_rsi:.1f} / {macd_status}
 ━━━━━━━━━━━━━━
-【 📈 市場報價 】
- ▸ 標的：{ticker}
- ▸ 股價：{current_price:.1f} 元
+【 🧠 AI 動態組 】
+▸ 動作：{dyn_action}
+▸ 說明：{dyn_reason}
+▸ 現金：{dyn_cash:,.0f} 元 | 庫存：{dyn_shares} 股
 ------------------------------
-【 🎛️ 武官儀表板 】
- ▸ ＲＳＩ：{current_rsi:.1f}
- ▸ 動能：{macd_status}
-------------------------------
-【 📋 系統決策 】
- ▸ 動作：{action_str}
- ▸ 說明：{reason_str}
-------------------------------
-【 💼 帳戶概況 】
- ▸ 全局現金：{final_cash:,.0f} 元
- ▸ 當前庫存：{final_shares} 股
+【 ⚖️ 靜態對照組 】
+▸ 動作：{sta_action}
+▸ 說明：{sta_reason}
+▸ 現金：{sta_cash:,.0f} 元 | 庫存：{sta_shares} 股
 ━━━━━━━━━━━━━━"""
         notifier.send_line_message(report_msg)
-        print(f"✅ {ticker} 戰情報告已成功傳送至 LINE！")
+        print(f"✅ {ticker} 雙宇宙戰情報告已傳送至 LINE！")
 
 def main_market_scan():
-    """全市場雷達掃描模式的主入口"""
-    execution.init_ledger() 
-    print(f"[{datetime.now().strftime('%H:%M:%S')}] 啟動多重標的雷達掃描與資金控管系統...")
+    execution.init_ledgers() 
+    print(f"[{datetime.now().strftime('%H:%M:%S')}] 啟動 A/B 測試雙引擎雷達掃描...")
     
     try:
-        total_active_positions = get_total_active_positions()
-        print(f"💼 目前帳戶已持有總部位數: {total_active_positions} 檔")
-        
         watchlist = getattr(config, 'WATCHLIST', [config.TICKER])
-        
         for ticker in watchlist:
-            run_trading_bot_for_ticker(ticker, total_active_positions)
-            total_active_positions = get_total_active_positions()
+            run_trading_bot_for_ticker(ticker)
             time.sleep(2)
             
         print(f"[{datetime.now().strftime('%H:%M:%S')}] ✅ 本次全市場掃描與下單判定完畢，系統安全結束。")
