@@ -1,51 +1,41 @@
-# 🏆 新增：多重標的雷達觀察名單 (可自由增減台股標的)
-WATCHLIST = ["2330.TW", "2317.TW", "2454.TW", "2308.TW", "2382.TW"] 
-
-# === A/B 測試：靜態對照組專用參數 (永遠不變) ===
-LEDGER_STATIC_PATH = "data/paper_ledger_static.csv"
-STATIC_RISK_PER_TRADE = 0.02   # 永遠固定單筆風險 2%
-STATIC_STOP_LOSS_PCT = 0.02    # 永遠固定停損 2%
-STATIC_TAKE_PROFIT_PCT = 0.10  # 永遠固定停利 10%
-
-MAX_POSITIONS = 3         # 🛡️ 防線 1：整個帳戶最多同時持有 3 檔股票部位
-POSITION_SIZE_PCT = 0.3   # 🛡️ 防線 2：單一檔股票最多只能吃掉「當下可用現金的 30%」，避免一檔就把錢扣光
-
-TICKER = "2330.TW"        # 保留原本的，做為防呆預設
-INITIAL_CAPITAL = 100000  # 初始模擬資金 10 萬
-RISK_PER_TRADE = 0.02     # 單筆承受風險 2%
-STOP_LOSS_PCT = 0.02      # 停損 2% 
-TAKE_PROFIT_PCT = 0.10    # 停利 10%
-VIX_THRESHOLD = 35
-
-# Gemini API 金鑰
-GEMINI_API_KEY = "AQ.Ab8RN6JilA-HBeMhS4WYBokJM8UWfMiHIy9zg8chNNcJc4nOcQ"
-
-# 檔案路徑
-LEDGER_PATH = "data/paper_ledger.csv"
-
-import json
 import os
 
-# 會被 AI 改變的動態參數 (以下為預設安全值，若找不到 AI 設定檔則套用此處)
-RISK_PER_TRADE = 0.02     # 單筆承受風險 2%
-STOP_LOSS_PCT = 0.02      # 停損 2% 
-TAKE_PROFIT_PCT = 0.10    # 停利 10%
+# ==========================================
+# ⚙️ 基礎系統設定
+# ==========================================
+INITIAL_CAPITAL = 100000  # 初始模擬資金 10 萬
+GEMINI_API_KEY = "AQ.Ab8RN6JilA-HBeMhS4WYBokJM8UWfMiHIy9zg8chNNcJc4nOcQ"  # Gemini API Key
 
-DYNAMIC_CONFIG_PATH = "dynamic_config.json"
+# ==========================================
+# 🌌 5.0 終極版：核心衛星配置名單
+# ==========================================
+TECH_TICKERS = ["2330.TW", "2317.TW", "2454.TW", "2308.TW", "2382.TW"] # 科技核心 (最多持股 3 檔)
+DEFENSIVE_TICKERS = ["2881.TW", "2886.TW", "2891.TW", "2603.TW", "2002.TW"] # 傳產金融衛星 (最多持股 2 檔)
 
-if os.path.exists(DYNAMIC_CONFIG_PATH):
-    try:
-        with open(DYNAMIC_CONFIG_PATH, "r", encoding="utf-8") as f:
-            dynamic_params = json.load(f)
-            
-        # 如果 AI 有產出新參數，就覆寫上面的預設值
-        if "RISK_PER_TRADE" in dynamic_params:
-            RISK_PER_TRADE = dynamic_params["RISK_PER_TRADE"]
-        if "STOP_LOSS_PCT" in dynamic_params:
-            STOP_LOSS_PCT = dynamic_params["STOP_LOSS_PCT"]
-        if "TAKE_PROFIT_PCT" in dynamic_params:
-            TAKE_PROFIT_PCT = dynamic_params["TAKE_PROFIT_PCT"]
-            
-        print("🔧 [系統設定] 已成功載入 AI 最新進化參數！")
-    except Exception as e:
-        print(f"⚠️ 讀取 AI 動態設定失敗，將強制使用預設安全參數: {e}")
+# 自動合併為全天候觀察清單
+WATCHLIST = TECH_TICKERS + DEFENSIVE_TICKERS
+
+# ==========================================
+# 🗂️ 四重平行宇宙帳本路徑
+# ==========================================
+LEDGER_DYN_1 = "data/ledger_dyn_1_agg.csv"  # 🚀 AI 動態積極組 (每週調整)
+LEDGER_DYN_2 = "data/ledger_dyn_2_con.csv"  # 🛡️ AI 動態穩健組 (每週調整)
+LEDGER_STA_1 = "data/ledger_sta_1_agg.csv"  # ⚔️ 靜態對照積極組 (死守參數)
+LEDGER_STA_2 = "data/ledger_sta_2_con.csv"  # 🧱 靜態對照穩健組 (死守參數)
+
+# ==========================================
+# 🧬 四重平行宇宙預設基因 (單筆風險 / ATR停損倍數)
+# ==========================================
+# 【積極型】 (Aggressive)：單筆風險 3%，ATR 3.0倍 (抱得緊，容忍大震盪以換取大波段)
+STA_1_RISK = 0.03
+STA_1_ATR = 3.0
+DYN_1_RISK = 0.03
+DYN_1_ATR = 3.0
+
+# 【穩健型】 (Conservative)：單筆風險 2%，ATR 2.0倍 (防禦極高，破線快跑)
+STA_2_RISK = 0.02
+STA_2_ATR = 2.0
+DYN_2_RISK = 0.02
+DYN_2_ATR = 2.0
+
+# (註：DYN_1 與 DYN_2 雖然這裡有預設值，但未來每週末會被 evolution.py 產生的 dynamic_config.json 覆蓋)
