@@ -1,61 +1,37 @@
 import pandas_ta as ta
 
 def calculate_indicators(df):
-    """幫歷史數據加上技術指標"""
-    # 🏆 根據最佳化回測結果：改為計算 21 日 RSI 以過濾雜訊
-    df.ta.rsi(length=21, append=True)
-    # 計算 MACD (快線 12, 慢線 26, 訊號線 9) - 維持不變的最強防禦設定
-    df.ta.macd(fast=12, slow=26, signal=9, append=True)
+    """幫歷史數據加上 5.0 終極版所需的所有技術指標"""
+    df.ta.rsi(length=14, append=True)                   # 14日 RSI 找回檔
+    df.ta.macd(fast=12, slow=26, signal=9, append=True) # MACD 找轉折動能
+    df.ta.sma(length=20, append=True)                   # 20日月線判斷大趨勢
+    df.ta.atr(length=14, append=True)                   # 14日真實波動幅度 (ATR停損核心)
     
-    # 刪除因為計算指標而產生的 NaN 空白列
     df.dropna(inplace=True)
     return df
 
 def check_buy_signal(df):
     """
-    判斷現在是不是該買進？
-    回傳 True (買進) 或 False (觀望)
+    判斷技術面是否符合進場條件：
+    1. 站上月線 (多頭趨勢)
+    2. RSI < 55 (短線回檔相對低點)
+    3. MACD 處於剛黃金交叉或開口向上的階段
     """
     if df is None or len(df) < 2:
         return False
 
-    # 取得最新一天的數據
     latest = df.iloc[-1]
     
-    # ⚠️ 注意這裡檢查的欄位要改成 RSI_21
-    if 'RSI_21' not in latest or 'MACD_12_26_9' not in latest:
+    if 'SMA_20' not in latest or 'ATRr_14' not in latest:
         return False
 
-    rsi = latest['RSI_21']
-    macd = latest['MACD_12_26_9']
-    macd_signal = latest['MACDs_12_26_9']
-
-    # 🏆 策略邏輯升級：放寬打擊區 (RSI < 55) + 動能反轉
-    if rsi < 55 and macd > macd_signal:
-        print(f"💡 [武官判定] 強烈買進訊號！RSI={rsi:.1f} (小幅回檔區) 且 MACD 呈現黃金交叉。")
-        return True
+    macd_diff = latest['MACD_12_26_9'] - latest['MACDs_12_26_9']
     
+    if (latest['Close'] > latest['SMA_20']) and (latest['RSI_14'] < 55) and (macd_diff > 0) and (macd_diff < 5):
+        return True
+        
     return False
 
 def check_sell_signal(df):
-    """
-    判斷現在是不是該賣出？(停利機制：動能衰退才賣)
-    """
-    if df is None or len(df) < 2:
-        return False
-        
-    latest = df.iloc[-1]
-    
-    # 檢查 MACD 欄位是否存在
-    if 'MACD_12_26_9' not in latest or 'MACDs_12_26_9' not in latest:
-        return False
-        
-    macd = latest['MACD_12_26_9']
-    macd_signal = latest['MACDs_12_26_9']
-    
-    # 策略邏輯：MACD 死亡交叉 (快線跌破慢線)，代表上漲動能消失，準備獲利了結或提早拔檔
-    if macd < macd_signal:
-        print(f"💡 [武官判定] 動能轉弱賣出訊號！MACD 出現死亡交叉。")
-        return True
-        
+    """在 5.0 架構下，賣出完全交由 main.py 的 ATR 吊燈停損來控管，武官不再亂發警報"""
     return False
