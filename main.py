@@ -47,11 +47,11 @@ def get_portfolio_breakdown(group_id):
         return 0, 0, 0
 
 def get_ticker_ledger_status(ticker, group_id, df_data):
-    """無狀態計算：讀取庫存，並利用歷史 K 線回推買進以來的最高價，用於計算 ATR 停損"""
+    """無狀態計算：讀取庫存，並回推買進以來的最高價"""
     path = execution.get_ledger_path(group_id)
     try:
         df = pd.read_csv(path)
-        if len(df) == 0: return 100000, 0, 0
+        if len(df) == 0: return getattr(config, 'INITIAL_CAPITAL', 100000), 0, 0
         
         cash_left = df.iloc[-1]["Cash_Left"]
         ticker_df = df[df['Ticker'] == ticker]
@@ -76,7 +76,40 @@ def get_ticker_ledger_status(ticker, group_id, df_data):
                 
         return cash_left, current_shares, highest_price
     except Exception:
-        return 100000, 0, 0
+        return getattr(config, 'INITIAL_CAPITAL', 100000), 0, 0
+
+def get_universe_equity(group_id, current_ticker, current_price):
+    """🏆 新增：精準計算整個宇宙的總淨值估算"""
+    path = execution.get_ledger_path(group_id)
+    try:
+        df = pd.read_csv(path)
+        if len(df) == 0: 
+            return getattr(config, 'INITIAL_CAPITAL', 100000)
+        
+        cash = df.iloc[-1]["Cash_Left"]
+        total_stock_value = 0
+        
+        tickers = df[df['Ticker'] != 'NONE']['Ticker'].unique()
+        for t in tickers:
+            t_df = df[df['Ticker'] == t]
+            buy_s = t_df[t_df['Action']=='BUY']['Shares'].sum()
+            sell_s = t_df[t_df['Action']=='SELL']['Shares'].sum()
+            shares = buy_s - sell_s
+            
+            if shares > 0:
+                if t == current_ticker:
+                    # 當前標的：用最新的現價計算
+                    total_stock_value += shares * current_price
+                else:
+                    # 其他標的：用最後一次買進的價格作為粗略估值
+                    buy_records = t_df[t_df['Action']=='BUY']
+                    if not buy_records.empty:
+                        last_price = buy_records.iloc[-1]['Price']
+                        total_stock_value += shares * last_price
+                        
+        return cash + total_stock_value
+    except Exception:
+        return getattr(config, 'INITIAL_CAPITAL', 100000)
 
 def evaluate_strategy(ticker, df_data, ml_buy_signal, llm_signal, group_id):
     """進入特定宇宙，套用該宇宙的專屬戰略"""
@@ -96,7 +129,6 @@ def evaluate_strategy(ticker, df_data, ml_buy_signal, llm_signal, group_id):
     should_notify = False
     
     if current_shares > 0:
-        # 動態計算最新防守線
         stop_price = highest_price - (curr_atr * atr_mult)
         
         if current_price <= stop_price:
@@ -118,7 +150,6 @@ def evaluate_strategy(ticker, df_data, ml_buy_signal, llm_signal, group_id):
         reason_str = "無技術進場訊號"
         
     else:
-        # Core-Satellite 額度檢查
         can_buy = False
         if ticker in getattr(config, 'TECH_TICKERS', []) and tech_count < 3:
             can_buy = True
@@ -130,12 +161,10 @@ def evaluate_strategy(ticker, df_data, ml_buy_signal, llm_signal, group_id):
         elif not llm_signal:
             reason_str = "文官否決進場"
         else:
-            # ATR 動態資金分配
             max_loss_amount = cash * risk_pct
             stop_distance = curr_atr * atr_mult
             shares_to_buy = int(max_loss_amount / stop_distance) if stop_distance > 0 else 0
             
-            # 單檔上限 20%
             max_alloc = cash * 0.20
             if (shares_to_buy * current_price) > max_alloc:
                 shares_to_buy = int(max_alloc / current_price)
@@ -162,47 +191,57 @@ def run_trading_bot_for_ticker(ticker):
     df_data = ml_brain.calculate_indicators(df_data)
     ml_buy_signal = ml_brain.check_buy_signal(df_data)
     
-    # 只要有買進訊號，呼叫文官審核一次即可，四個宇宙共用結果
     llm_signal = True
     if ml_buy_signal:
         print(f"📈 訊號亮起！呼叫文官進行大盤風險審查...")
         real_news = fetcher.get_latest_news(ticker)
         llm_signal = llm_brain.analyze_sentiment(real_news)
 
-    # 🌐 平行進入四大宇宙執行策略
     groups = ["DYN_1", "DYN_2", "STA_1", "STA_2"]
     results = {}
     any_notify = False
     
     for g in groups:
         act, rsn, notif, cash, shares = evaluate_strategy(ticker, df_data, ml_buy_signal, llm_signal, g)
-        results[g] = {"act": act, "rsn": rsn, "cash": cash, "shares": shares}
+        
+        # 🏆 核心更新：取得該宇宙「操作後」的總淨值
+        equity = get_universe_equity(g, ticker, current_price)
+        
+        results[g] = {"act": act, "rsn": rsn, "cash": cash, "shares": shares, "equity": equity}
         if notif: any_notify = True
 
-    # 只要有任何一個宇宙發生變化或抱倉，就發送一份統整戰報
     if any_notify:
         tw_time = datetime.utcnow() + pd.Timedelta(hours=8)
         now_str = tw_time.strftime("%Y-%m-%d %H:%M")
         
+        # 🏆 介面大升級：加入現金、股數與總資產
         report_msg = f"""📊｜4D 矩陣戰情報告
 🕒｜{now_str}
 ▸ 標的：{ticker} @ {current_price:.1f}
 ━━━━━━━━━━━━━━
 【 🚀 DYN-1 AI 積極動態 】
-▸ {results['DYN_1']['act']} ({results['DYN_1']['shares']} 股)
+▸ {results['DYN_1']['act']}
 ▸ {results['DYN_1']['rsn']}
+▸ 💵 現金: {results['DYN_1']['cash']:,.0f} | 📦 庫存: {results['DYN_1']['shares']} 股
+▸ 💰 總資產估算: {results['DYN_1']['equity']:,.0f} 元
 ------------------------------
 【 🛡️ DYN-2 AI 穩健動態 】
-▸ {results['DYN_2']['act']} ({results['DYN_2']['shares']} 股)
+▸ {results['DYN_2']['act']}
 ▸ {results['DYN_2']['rsn']}
+▸ 💵 現金: {results['DYN_2']['cash']:,.0f} | 📦 庫存: {results['DYN_2']['shares']} 股
+▸ 💰 總資產估算: {results['DYN_2']['equity']:,.0f} 元
 ------------------------------
 【 ⚔️ STA-1 靜態積極對照 】
-▸ {results['STA_1']['act']} ({results['STA_1']['shares']} 股)
+▸ {results['STA_1']['act']}
 ▸ {results['STA_1']['rsn']}
+▸ 💵 現金: {results['STA_1']['cash']:,.0f} | 📦 庫存: {results['STA_1']['shares']} 股
+▸ 💰 總資產估算: {results['STA_1']['equity']:,.0f} 元
 ------------------------------
 【 🧱 STA-2 靜態穩健對照 】
-▸ {results['STA_2']['act']} ({results['STA_2']['shares']} 股)
+▸ {results['STA_2']['act']}
 ▸ {results['STA_2']['rsn']}
+▸ 💵 現金: {results['STA_2']['cash']:,.0f} | 📦 庫存: {results['STA_2']['shares']} 股
+▸ 💰 總資產估算: {results['STA_2']['equity']:,.0f} 元
 ━━━━━━━━━━━━━━"""
         notifier.send_line_message(report_msg)
         print(f"✅ {ticker} 4D 戰情報告已傳送至 LINE！")
