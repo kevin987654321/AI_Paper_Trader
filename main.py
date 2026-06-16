@@ -78,8 +78,8 @@ def get_ticker_ledger_status(ticker, group_id, df_data):
     except Exception:
         return getattr(config, 'INITIAL_CAPITAL', 100000), 0, 0
 
-def get_universe_equity(group_id, current_ticker, current_price):
-    """🏆 精準計算整個宇宙的總淨值估算"""
+def get_universe_equity(group_id, market_prices):
+    """🏆 精準計算整個宇宙的總淨值估算 (引入 MTM 實時市價更新)"""
     path = execution.get_ledger_path(group_id)
     try:
         df = pd.read_csv(path)
@@ -97,11 +97,11 @@ def get_universe_equity(group_id, current_ticker, current_price):
             shares = buy_s - sell_s
             
             if shares > 0:
-                if t == current_ticker and current_price is not None:
-                    # 當前標的：用最新的現價計算
-                    total_stock_value += shares * current_price
+                # 優先使用傳入的市價字典，確保估值與 LINE 戰報完全一致
+                if market_prices and t in market_prices and market_prices[t] is not None:
+                    total_stock_value += shares * market_prices[t]
                 else:
-                    # 其他標的 (或快照時)：用最後一次買進的價格作為粗略估值
+                    # 如果真的抓不到現價，才退回使用歷史買進成本
                     buy_records = t_df[t_df['Action']=='BUY']
                     if not buy_records.empty:
                         last_price = buy_records.iloc[-1]['Price']
@@ -180,7 +180,7 @@ def evaluate_strategy(ticker, df_data, ml_buy_signal, llm_signal, group_id):
     final_cash, final_shares, _ = get_ticker_ledger_status(ticker, group_id, df_data)
     return action_str, reason_str, should_notify, final_cash, final_shares
 
-def run_trading_bot_for_ticker(ticker):
+def run_trading_bot_for_ticker(ticker, market_prices):
     print(f"\n 正在掃描標的: {ticker}...")
     
     df_data = fetcher.get_stock_data(ticker)
@@ -188,6 +188,9 @@ def run_trading_bot_for_ticker(ticker):
         return 
         
     current_price = df_data['Close'].iloc[-1]
+    # 動態將抓到的最新價格放進字典，給後面的資產估算引擎使用
+    market_prices[ticker] = current_price 
+    
     df_data = ml_brain.calculate_indicators(df_data)
     ml_buy_signal = ml_brain.check_buy_signal(df_data)
     
@@ -203,7 +206,9 @@ def run_trading_bot_for_ticker(ticker):
     
     for g in groups:
         act, rsn, notif, cash, shares = evaluate_strategy(ticker, df_data, ml_buy_signal, llm_signal, g)
-        equity = get_universe_equity(g, ticker, current_price)
+        
+        # 帶入包含最新報價的字典，算出跟 LINE 戰報完全一致的數字
+        equity = get_universe_equity(g, market_prices)
         
         results[g] = {"act": act, "rsn": rsn, "cash": cash, "shares": shares, "equity": equity}
         if notif: any_notify = True
@@ -243,37 +248,33 @@ def run_trading_bot_for_ticker(ticker):
         notifier.send_line_message(report_msg)
         print(f"✅ {ticker} 4D 戰情報告已傳送至 LINE！")
 
-def record_nav_snapshot():
-    """🏆 新增模組：記錄 4 個宇宙當下的淨值快照，並匯出為前端可讀的 JS 檔"""
+def record_nav_snapshot(market_prices):
+    """記錄 4 個宇宙當下的淨值快照，並匯出為前端可讀的 JS 檔"""
     nav_csv_path = "data/nav_history.csv"
     nav_js_path = "data/nav_data.js"
     
-    # 確保 data 資料夾存在
     if not os.path.exists("data"):
         os.makedirs("data")
         
-    # 1. 寫入歷史 CSV (做為系統長期紀錄)
     if not os.path.exists(nav_csv_path):
         with open(nav_csv_path, "w", encoding="utf-8") as f:
             f.write("Datetime,DYN_1,DYN_2,STA_1,STA_2\n")
     
-    # 取得當前時間 (例如 06/16 10:30)
     now_str = datetime.now().strftime("%m/%d %H:%M")
     navs = []
     
     for g in ["DYN_1", "DYN_2", "STA_1", "STA_2"]:
-        # 估算當前總資產 (不需要傳入當下標的，會用最後買進價作為基準)
-        nav = get_universe_equity(g, None, None) 
+        # 使用最新的全局市價字典，產生真正的 MTM 浮動淨值
+        nav = get_universe_equity(g, market_prices) 
         navs.append(nav)
         
     with open(nav_csv_path, "a", encoding="utf-8") as f:
         f.write(f"{now_str},{navs[0]},{navs[1]},{navs[2]},{navs[3]}\n")
         
-    # 2. 神級橋接：轉換為前端 HTML 可以直接讀取的 JS 變數 (避開瀏覽器 CORS 阻擋)
     labels, d1, d2, s1, s2 = [], [], [], [], []
     try:
         with open(nav_csv_path, "r", encoding="utf-8") as f:
-            lines = f.readlines()[1:] # 跳過標題列
+            lines = f.readlines()[1:] 
             for line in lines:
                 cols = line.strip().split(',')
                 if len(cols) == 5:
@@ -283,7 +284,6 @@ def record_nav_snapshot():
                     s1.append(float(cols[3]))
                     s2.append(float(cols[4]))
                     
-        # 將數據打包成 JavaScript 代碼
         js_content = f"""
 const NAV_HISTORY = {{
     labels: {json.dumps(labels)},
@@ -305,12 +305,25 @@ def main_market_scan():
     
     try:
         watchlist = getattr(config, 'WATCHLIST', [])
+        
+        # 🏆 核心修正：在掃描前先建立一個「市價字典」
+        market_prices = {}
+        print("🔄 正在預載全市場即時報價，以確保淨值 (NAV) 估算精準...")
         for ticker in watchlist:
-            run_trading_bot_for_ticker(ticker)
+            try:
+                df = fetcher.get_stock_data(ticker, period="5d")
+                if df is not None and not df.empty:
+                    market_prices[ticker] = df['Close'].iloc[-1]
+            except Exception:
+                pass
+        
+        for ticker in watchlist:
+            # 傳遞這個字典，讓它在每跑一檔股票時都能用最新價格
+            run_trading_bot_for_ticker(ticker, market_prices)
             time.sleep(2)
             
-        # 🏆 核心升級：全市場掃描結束後，立刻拍一張資產快照傳給前端！
-        record_nav_snapshot()
+        # 掃描結束，傳入全局字典拍下最終快照！
+        record_nav_snapshot(market_prices)
         print(f"📸 宇宙淨值快照已儲存，成功同步至前端戰情室！")
             
         print(f"[{datetime.now().strftime('%H:%M:%S')}] ✅ 本次全市場矩陣掃描完畢。")
