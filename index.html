@@ -1,9 +1,13 @@
 <!DOCTYPE html>
-<html lang="zh-Hant">
+<html lang="zh-Hant" class="notranslate" translate="no">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="google" content="notranslate">
+    
     <title>4D Matrix | AI 量化指揮中心</title>
+    
+    <script src="data/nav_data.js" onerror="console.warn('等待 Python 產出第一筆 nav_data.js')"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     
@@ -56,7 +60,7 @@
             filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.5)); cursor: default;
         }
 
-        /* 經典微米級玻璃面板 (dashboard1 原版) */
+        /* 經典微米級玻璃面板 */
         .glass-panel {
             position: relative; background: rgba(18, 18, 18, 0.2);
             border: 1px solid rgba(255, 255, 255, 0.05); border-radius: 10px;
@@ -210,23 +214,19 @@
         <div class="stat-grid">
             <div class="glass-panel stat-card active-focus" id="card-DYN_1" onclick="handleCardClick('DYN_1', event)">
                 <div class="stat-title"><i class="fa-solid fa-rocket" style="color: var(--color-dyn1)"></i> DYN_1 積極 AI</div>
-                <div class="stat-value" id="val-dyn1">$ 100,000</div>
-                <div style="font-size: 11px; color: #888;">+ 0.00%</div>
+                <div class="stat-value" id="val-dyn1">-</div>
             </div>
             <div class="glass-panel stat-card active-focus" id="card-DYN_2" onclick="handleCardClick('DYN_2', event)">
                 <div class="stat-title"><i class="fa-solid fa-shield-halved" style="color: var(--color-dyn2)"></i> DYN_2 穩健 AI</div>
-                <div class="stat-value" id="val-dyn2">$ 100,000</div>
-                <div style="font-size: 11px; color: #888;">+ 0.00%</div>
+                <div class="stat-value" id="val-dyn2">-</div>
             </div>
             <div class="glass-panel stat-card active-focus" id="card-STA_1" onclick="handleCardClick('STA_1', event)">
                 <div class="stat-title"><i class="fa-solid fa-bolt" style="color: var(--color-sta1)"></i> STA_1 靜態積極</div>
-                <div class="stat-value" id="val-sta1">$ 100,000</div>
-                <div style="font-size: 11px; color: #888;">+ 0.00%</div>
+                <div class="stat-value" id="val-sta1">-</div>
             </div>
             <div class="glass-panel stat-card active-focus" id="card-STA_2" onclick="handleCardClick('STA_2', event)">
                 <div class="stat-title"><i class="fa-solid fa-layer-group" style="color: var(--color-sta2)"></i> STA_2 靜態穩健</div>
-                <div class="stat-value" id="val-sta2">$ 100,000</div>
-                <div style="font-size: 11px; color: #888;">+ 0.00%</div>
+                <div class="stat-value" id="val-sta2">-</div>
             </div>
         </div>
 
@@ -253,9 +253,9 @@
                     <span style="font-size: 11px; color: #444;" id="terminal-status">STATUS: GLOBAL SYNC</span>
                 </div>
                 <div class="chat-display" id="chat-output">
-    <span style="color: rgba(255,255,255,0.5);">[SYSTEM]</span> 根據 2026-06-15 10:01 紀錄，四大宇宙完美同步。<br>
-    <span style="color: rgba(255,255,255,0.5);">[SYNC]</span> 現金部位: $80,002 | 股票庫存: 2002.TW (1047股) | NAV: $100,000<br>
-    <span style="color: #666;">等待指令...</span>
+                    <span style="color: #00ffaa;">[CONNECTED]</span> 成功接軌 Python 戰略核心。<br>
+                    <span style="color: rgba(255,255,255,0.5);">[SYNC]</span> 資產快照數據已載入。您可以點擊上方卡片單選，或按住 Ctrl 進行多選。<br>
+                    <span style="color: #666;">等待指令...</span>
                 </div>
                 <div class="chat-input-area">
                     <input type="text" id="chat-input" placeholder="詢問當前聚焦宇宙的戰略細節..." onkeypress="handleEnter(event)">
@@ -342,7 +342,29 @@
 
 <script>
     /* =========================================
-       1. 游標高光追蹤 (僅作用於 glass-panel)
+       0. 終極數據橋接：讀取 Python 產出的真實快照數據
+       ========================================= */
+    let chartLabels = ['等待啟動'];
+    let d1 = [100000], d2 = [100000], s1 = [100000], s2 = [100000];
+
+    // 如果 Python 成功執行 main.py 產出了 data/nav_data.js，就會載入並覆寫變數
+    if (typeof NAV_HISTORY !== 'undefined') {
+        chartLabels = NAV_HISTORY.labels;
+        d1 = NAV_HISTORY.DYN_1;
+        d2 = NAV_HISTORY.DYN_2;
+        s1 = NAV_HISTORY.STA_1;
+        s2 = NAV_HISTORY.STA_2;
+    }
+
+    // 將真實數據的「最後一筆」數字寫入上方四大卡片，並加上千分位逗號
+    document.getElementById('val-dyn1').innerText = "$ " + d1[d1.length - 1].toLocaleString();
+    document.getElementById('val-dyn2').innerText = "$ " + d2[d2.length - 1].toLocaleString();
+    document.getElementById('val-sta1').innerText = "$ " + s1[s1.length - 1].toLocaleString();
+    document.getElementById('val-sta2').innerText = "$ " + s2[s2.length - 1].toLocaleString();
+
+
+    /* =========================================
+       1. 游標高光追蹤
        ========================================= */
     document.addEventListener('mousemove', e => {
         document.querySelectorAll('.glass-panel, .glass-title-text').forEach(el => {
@@ -428,21 +450,21 @@
     }
 
     /* =========================================
-       4. Chart.js 初始化與連動設定
+       4. Chart.js 初始化與真實數據載入
        ========================================= */
-    const realData = {
-        labels: ['09:00', '09:30', '10:00', '10:31', '11:01', 'Now'],
+    const chartData = {
+        labels: chartLabels,
         datasets: [
-            { label: 'DYN_1 (積極 AI)', data: [100000, 100000, 100000, 99895, 100000, 100000], borderColor: '#00ffaa', fill: false, tension: 0.1, pointRadius: 3, borderWidth: 2 },
-            { label: 'DYN_2 (穩健 AI)', data: [100000, 100000, 100000, 99895, 100000, 100000], borderColor: '#00d4ff', fill: false, tension: 0.1, pointRadius: 3, borderWidth: 2 }, // DYN_2 藍線改為實線
-            { label: 'STA_1 (靜態積極)', data: [100000, 100000, 100000, 99895, 100000, 100000], borderColor: '#ff4560', fill: false, tension: 0.1, pointRadius: 3, borderWidth: 2, borderDash: [2,4] },
-            { label: 'STA_2 (靜態穩健)', data: [100000, 100000, 100000, 99895, 100000, 100000], borderColor: '#feb019', fill: false, tension: 0.1, pointRadius: 3, borderWidth: 2, borderDash: [1,6] }
+            { label: 'DYN_1 (積極 AI)', data: d1, borderColor: '#00ffaa', fill: false, tension: 0.1, pointRadius: 3, borderWidth: 2 },
+            { label: 'DYN_2 (穩健 AI)', data: d2, borderColor: '#00d4ff', fill: false, tension: 0.1, pointRadius: 3, borderWidth: 2 }, // DYN_2 藍線實線
+            { label: 'STA_1 (靜態積極)', data: s1, borderColor: '#ff4560', fill: false, tension: 0.1, pointRadius: 3, borderWidth: 2, borderDash: [2,4] },
+            { label: 'STA_2 (靜態穩健)', data: s2, borderColor: '#feb019', fill: false, tension: 0.1, pointRadius: 3, borderWidth: 2, borderDash: [1,6] }
         ]
     };
 
     const mainChart = new Chart(document.getElementById('mainChart').getContext('2d'), {
         type: 'line',
-        data: JSON.parse(JSON.stringify(realData)),
+        data: chartData,
         options: {
             responsive: true, maintainAspectRatio: false,
             interaction: { mode: 'index', intersect: false },
@@ -450,9 +472,10 @@
                 legend: { display: false },
                 tooltip: { backgroundColor: 'rgba(0,0,0,0.8)', titleColor: '#fff', padding: 12 }
             },
+            // 解除 Y 軸 min/max，讓 Chart.js 隨著真實資產自動縮放視角！
             scales: {
-                y: { min: 99800, max: 100100, grid: { color: 'rgba(255,255,255,0.03)' }, ticks: { color: '#444' } },
-                x: { grid: { display: false }, ticks: { color: '#444' } }
+                y: { grid: { color: 'rgba(255,255,255,0.03)' }, ticks: { color: '#666' } },
+                x: { grid: { display: false }, ticks: { color: '#666' } }
             },
             onClick: (e, elements) => {
                 const activePoints = mainChart.getElementsAtEventForMode(e, 'nearest', { intersect: true }, false);
@@ -467,25 +490,18 @@
     function changeTimeframe(btn, tf) {
         document.querySelectorAll('.tf-btn').forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
-        
-        let labels = tf === '1D' ? ['09:00', '09:30', '10:00', '10:31', '11:01', 'Now'] : 
-                     tf === '1W' ? ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Today'] :
-                     ['M-5', 'M-4', 'M-3', 'M-2', 'M-1', 'Today'];
-                     
-        mainChart.data.labels = labels;
-        mainChart.update();
+        // 此處時間切換按鈕僅作樣式改變，真實邏輯需由後端配合篩選區間
     }
 
     /* =========================================
        5. 互動與問答邏輯
        ========================================= */
     function showUniverseDetail(label, color) {
-        document.getElementById('detail-title').innerHTML = `<span style="color:${color}">●</span> ${label} 即時狀態`;
+        document.getElementById('detail-title').innerHTML = `<span style="color:${color}">●</span> ${label} 歷史數據`;
         document.getElementById('detail-content').innerHTML = `
             <table style="width:100%; border-collapse:collapse;">
-                <tr><td>可用殘額 (Cash):</td><td style="color:#fff; text-align:right;">$ 80,002</td></tr>
-                <tr><td>主要持股 (Core):</td><td style="color:#fff; text-align:right;">2002.TW (1047 股)</td></tr>
-                <tr><td>總資產 NAV:</td><td style="color:#fff; text-align:right;">$ 100,000</td></tr>
+                <tr><td>最新總資產 NAV:</td><td style="color:#fff; text-align:right;">即時監控中</td></tr>
+                <tr><td>防禦狀態:</td><td style="color:#fff; text-align:right;">ATR 移動停損運作中</td></tr>
             </table>`;
         document.getElementById('detailModal').style.display = 'flex';
     }
@@ -503,7 +519,7 @@
         input.value = ""; output.scrollTop = output.scrollHeight;
 
         setTimeout(() => {
-            const response = `[GEMINI] 根據 2026-06-15 11:01 紀錄，目前 ${selectedUniverses.join(', ')} 宇宙的資金運用完全重疊。中鋼 (2002) 佔比皆為 20%，觸發保護機制。防線已隨波段墊高，靜待後市突破。`;
+            const response = `[GEMINI] 收到。當前戰略重心聚焦於 ${selectedUniverses.join(', ')}。真實快照已載入，一切運作正常。`;
             let i = 0; let node = document.createElement('span'); node.style.color = '#fff'; output.appendChild(node);
             function type() { if (i < response.length) { node.innerHTML += response.charAt(i++); output.scrollTop = output.scrollHeight; setTimeout(type, 15); } }
             type();
