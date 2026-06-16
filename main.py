@@ -79,7 +79,7 @@ def get_ticker_ledger_status(ticker, group_id, df_data):
         return getattr(config, 'INITIAL_CAPITAL', 100000), 0, 0
 
 def get_universe_equity(group_id, current_ticker, current_price):
-    """🏆 新增：精準計算整個宇宙的總淨值估算"""
+    """🏆 精準計算整個宇宙的總淨值估算"""
     path = execution.get_ledger_path(group_id)
     try:
         df = pd.read_csv(path)
@@ -97,11 +97,11 @@ def get_universe_equity(group_id, current_ticker, current_price):
             shares = buy_s - sell_s
             
             if shares > 0:
-                if t == current_ticker:
+                if t == current_ticker and current_price is not None:
                     # 當前標的：用最新的現價計算
                     total_stock_value += shares * current_price
                 else:
-                    # 其他標的：用最後一次買進的價格作為粗略估值
+                    # 其他標的 (或快照時)：用最後一次買進的價格作為粗略估值
                     buy_records = t_df[t_df['Action']=='BUY']
                     if not buy_records.empty:
                         last_price = buy_records.iloc[-1]['Price']
@@ -203,8 +203,6 @@ def run_trading_bot_for_ticker(ticker):
     
     for g in groups:
         act, rsn, notif, cash, shares = evaluate_strategy(ticker, df_data, ml_buy_signal, llm_signal, g)
-        
-        # 🏆 核心更新：取得該宇宙「操作後」的總淨值
         equity = get_universe_equity(g, ticker, current_price)
         
         results[g] = {"act": act, "rsn": rsn, "cash": cash, "shares": shares, "equity": equity}
@@ -214,7 +212,6 @@ def run_trading_bot_for_ticker(ticker):
         tw_time = datetime.utcnow() + pd.Timedelta(hours=8)
         now_str = tw_time.strftime("%Y-%m-%d %H:%M")
         
-        # 🏆 介面大升級：加入現金、股數與總資產
         report_msg = f"""📊｜4D 矩陣戰情報告
 🕒｜{now_str}
 ▸ 標的：{ticker} @ {current_price:.1f}
@@ -246,6 +243,62 @@ def run_trading_bot_for_ticker(ticker):
         notifier.send_line_message(report_msg)
         print(f"✅ {ticker} 4D 戰情報告已傳送至 LINE！")
 
+def record_nav_snapshot():
+    """🏆 新增模組：記錄 4 個宇宙當下的淨值快照，並匯出為前端可讀的 JS 檔"""
+    nav_csv_path = "data/nav_history.csv"
+    nav_js_path = "data/nav_data.js"
+    
+    # 確保 data 資料夾存在
+    if not os.path.exists("data"):
+        os.makedirs("data")
+        
+    # 1. 寫入歷史 CSV (做為系統長期紀錄)
+    if not os.path.exists(nav_csv_path):
+        with open(nav_csv_path, "w", encoding="utf-8") as f:
+            f.write("Datetime,DYN_1,DYN_2,STA_1,STA_2\n")
+    
+    # 取得當前時間 (例如 06/16 10:30)
+    now_str = datetime.now().strftime("%m/%d %H:%M")
+    navs = []
+    
+    for g in ["DYN_1", "DYN_2", "STA_1", "STA_2"]:
+        # 估算當前總資產 (不需要傳入當下標的，會用最後買進價作為基準)
+        nav = get_universe_equity(g, None, None) 
+        navs.append(nav)
+        
+    with open(nav_csv_path, "a", encoding="utf-8") as f:
+        f.write(f"{now_str},{navs[0]},{navs[1]},{navs[2]},{navs[3]}\n")
+        
+    # 2. 神級橋接：轉換為前端 HTML 可以直接讀取的 JS 變數 (避開瀏覽器 CORS 阻擋)
+    labels, d1, d2, s1, s2 = [], [], [], [], []
+    try:
+        with open(nav_csv_path, "r", encoding="utf-8") as f:
+            lines = f.readlines()[1:] # 跳過標題列
+            for line in lines:
+                cols = line.strip().split(',')
+                if len(cols) == 5:
+                    labels.append(cols[0])
+                    d1.append(float(cols[1]))
+                    d2.append(float(cols[2]))
+                    s1.append(float(cols[3]))
+                    s2.append(float(cols[4]))
+                    
+        # 將數據打包成 JavaScript 代碼
+        js_content = f"""
+const NAV_HISTORY = {{
+    labels: {json.dumps(labels)},
+    DYN_1: {json.dumps(d1)},
+    DYN_2: {json.dumps(d2)},
+    STA_1: {json.dumps(s1)},
+    STA_2: {json.dumps(s2)}
+}};
+"""
+        with open(nav_js_path, "w", encoding="utf-8") as f:
+            f.write(js_content.strip())
+            
+    except Exception as e:
+        print(f"⚠️ NAV 快照匯出失敗: {e}")
+
 def main_market_scan():
     execution.init_ledgers() 
     print(f"[{datetime.now().strftime('%H:%M:%S')}] 啟動 4D 平行宇宙矩陣雷達...")
@@ -255,6 +308,10 @@ def main_market_scan():
         for ticker in watchlist:
             run_trading_bot_for_ticker(ticker)
             time.sleep(2)
+            
+        # 🏆 核心升級：全市場掃描結束後，立刻拍一張資產快照傳給前端！
+        record_nav_snapshot()
+        print(f"📸 宇宙淨值快照已儲存，成功同步至前端戰情室！")
             
         print(f"[{datetime.now().strftime('%H:%M:%S')}] ✅ 本次全市場矩陣掃描完畢。")
     except Exception as e:
