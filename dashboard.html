@@ -1,0 +1,517 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>4D Matrix | AI 量化指揮中心</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    
+    <style>
+        /* =========================================
+           全域設定與顏色變數
+           ========================================= */
+        :root {
+            --bg-color: #030303;
+            --bg-gradient: radial-gradient(circle at 50% 0%, #121212 0%, #030303 80%);
+            --border-color: rgba(255, 255, 255, 0.06);
+            --text-main: #e0e0e0;
+            --text-sub: #555;
+            
+            /* 四大宇宙核心發光色 */
+            --color-dyn1: #00ffaa; /* 積極 AI - 螢光綠 */
+            --color-dyn2: #00d4ff; /* 穩健 AI - 科技藍 */
+            --color-sta1: #ff4560; /* 靜態積極 - 寶石紅 */
+            --color-sta2: #feb019; /* 靜態穩健 - 琥珀橘 */
+            
+            /* Gemini 終端機動態主題變數 */
+            --commander-gradient: rgba(255, 255, 255, 0.15);
+            --commander-glow-opacity: 0.02;
+        }
+
+        * { box-sizing: border-box; user-select: none; -webkit-user-select: none; }
+        
+        /* 隱藏原生捲軸，改為高質感半透明捲軸 */
+        ::-webkit-scrollbar { width: 5px; height: 5px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.15); border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.3); }
+
+        body {
+            background: var(--bg-gradient);
+            color: var(--text-main);
+            font-family: "Inter", "Microsoft JhengHei", sans-serif;
+            margin: 0;
+            height: 100vh;
+            display: flex;
+            overflow: hidden;
+        }
+
+        /* 玻璃標題字體 */
+        .glass-title-text {
+            font-size: 22px; font-weight: 900; letter-spacing: 5px; text-align: center;
+            margin: 15px 0 35px 0; padding: 10px;
+            background: radial-gradient(circle at var(--rx, 50%) var(--ry, 50%), #ffffff 0%, rgba(255,255,255,0.6) 50%, rgba(255,255,255,0.3) 100%);
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+            filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.5)); cursor: default;
+        }
+
+        /* 經典微米級玻璃面板 (dashboard1 原版) */
+        .glass-panel {
+            position: relative; background: rgba(18, 18, 18, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.05); border-radius: 10px;
+            backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5); overflow: hidden;
+            transition: border-color 0.3s, box-shadow 0.3s, transform 0.2s, opacity 0.3s;
+        }
+        .glass-panel::before {
+            content: ""; position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+            background: radial-gradient(180px circle at var(--rx, 50%) var(--ry, 50%), rgba(255, 255, 255, 0.025), transparent 60%);
+            z-index: 1; pointer-events: none; opacity: 0; transition: opacity 0.4s ease;
+        }
+        .glass-panel:hover::before { opacity: 1; }
+        .glass-panel > * { position: relative; z-index: 2; }
+
+        /* 左側導覽列 */
+        #sidebar {
+            width: 260px; border-right: 1px solid var(--border-color);
+            display: flex; flex-direction: column; padding: 20px;
+            background: rgba(5, 5, 5, 0.4); z-index: 100; flex-shrink: 0;
+        }
+        .menu-item {
+            padding: 14px 18px; margin-bottom: 8px; border-radius: 6px; cursor: pointer;
+            transition: all 0.2s; color: #666; display: flex; align-items: center; gap: 12px; font-size: 13px; font-weight: 500;
+        }
+        .menu-item:hover, .menu-item.active { background: rgba(255, 255, 255, 0.03); color: #fff; }
+        .menu-item i { width: 16px; font-size: 14px; }
+
+        /* =========================================
+           主框架 (無縫分頁容器)
+           ========================================= */
+        #content-area {
+            flex: 1; position: relative; height: 100vh; overflow: hidden;
+        }
+        
+        .view-section {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            padding: 20px; display: flex; flex-direction: column; gap: 15px;
+            opacity: 0; pointer-events: none; transition: opacity 0.3s ease;
+            overflow-y: auto;
+        }
+        .view-section.active { opacity: 1; pointer-events: auto; }
+
+        /* =========================================
+           [視圖 1] 指揮中心 Dashboard
+           ========================================= */
+        .stat-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; height: 96px; flex-shrink: 0; }
+        .stat-card { padding: 16px; cursor: pointer; border-color: rgba(255,255,255,0.04); }
+        .stat-card.active-focus { background: rgba(255, 255, 255, 0.04); box-shadow: inset 0 0 15px rgba(255,255,255,0.02); }
+        .stat-card.dimmed { opacity: 0.25; }
+        .stat-title { font-size: 11px; color: #666; margin-bottom: 6px; display: flex; align-items: center; gap: 6px; font-weight: 600; }
+        .stat-value { font-size: 20px; font-weight: 700; font-family: monospace; }
+
+        #chart-container { flex: 1; min-height: 0; display: flex; flex-direction: column; padding: 16px 20px; }
+        .chart-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; flex-shrink: 0; }
+        .chart-wrapper { flex: 1; min-height: 0; position: relative; }
+        .timeframe-selector { display: flex; gap: 4px; background: rgba(0,0,0,0.4); padding: 3px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.03); }
+        .tf-btn { background: transparent; border: none; color: #555; padding: 5px 12px; border-radius: 4px; cursor: pointer; font-size: 11px; transition: 0.2s; font-weight: bold; }
+        .tf-btn:hover { color: #fff; }
+        .tf-btn.active { background: rgba(255,255,255,0.08); color: #fff; }
+
+        /* 🏆 Gemini 終端機：動態混色漸層與呼吸邊緣 */
+        @keyframes breathe {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+        #ai-commander {
+            position: relative; height: 190px; display: flex; flex-direction: column; flex-shrink: 0;
+            background: rgba(10, 10, 10, 0.4); border-radius: 10px; backdrop-filter: blur(20px);
+            border: none; margin-bottom: 5px;
+        }
+        #ai-commander::after {
+            content: ""; position: absolute; inset: 0; border-radius: 10px; padding: 1px;
+            background: var(--commander-gradient); background-size: 200% 200%;
+            -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+            -webkit-mask-composite: xor; mask-composite: exclude;
+            animation: breathe 3s ease infinite; pointer-events: none;
+            transition: background 0.5s ease;
+        }
+        #ai-commander::before {
+            content: ""; position: absolute; inset: -1px; border-radius: 10px;
+            background: var(--commander-gradient); background-size: 200% 200%;
+            filter: blur(8px); opacity: var(--commander-glow-opacity);
+            animation: breathe 3s ease infinite; z-index: -1; pointer-events: none;
+            transition: background 0.5s ease, opacity 0.5s ease;
+        }
+
+        .commander-inner { display: flex; flex-direction: column; height: 100%; border-radius: inherit; z-index: 2; position: relative; }
+        .ai-header { padding: 10px 20px; background: rgba(255,255,255,0.02); border-bottom: 1px solid rgba(255,255,255,0.03); display: flex; justify-content: space-between; flex-shrink: 0; }
+        .chat-display { flex: 1; padding: 15px 20px; font-size: 12.5px; color: #aaa; overflow-y: auto; line-height: 1.6; font-family: monospace; }
+        .chat-input-area { padding: 12px 20px; border-top: 1px solid rgba(255,255,255,0.03); display: flex; gap: 10px; background: rgba(0,0,0,0.2); flex-shrink: 0; border-radius: 0 0 10px 10px;}
+        .chat-input-area input { flex: 1; background: rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.06); padding: 10px 14px; border-radius: 6px; color: #fff; font-family: monospace; transition: border-color 0.4s; font-size: 12px; }
+        .chat-input-area input:focus { outline: none; border-color: rgba(255,255,255,0.2); }
+        .send-btn { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: #fff; padding: 0 18px; border-radius: 6px; cursor: pointer; font-size: 11px; }
+
+        /* =========================================
+           [視圖 2] 交易紀錄回溯
+           ========================================= */
+        .records-table-container { flex: 1; overflow: auto; padding: 20px; }
+        table { width: 100%; border-collapse: collapse; text-align: left; font-size: 13px; font-family: monospace; }
+        th { color: #888; padding: 15px; border-bottom: 1px solid rgba(255,255,255,0.1); position: sticky; top: 0; background: rgba(18,18,18,0.9); backdrop-filter: blur(10px); z-index: 10; }
+        td { padding: 15px; color: #ccc; border-bottom: 1px solid rgba(255,255,255,0.03); }
+        tr:hover td { background: rgba(255,255,255,0.05); color: #fff; }
+        .badge-buy { background: rgba(0,255,170,0.1); color: #00ffaa; padding: 4px 8px; border-radius: 4px; border: 1px solid rgba(0,255,170,0.3); }
+
+        /* =========================================
+           [視圖 3] AI 基因設定
+           ========================================= */
+        .gene-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; flex: 1; align-content: start; }
+        .gene-card { padding: 30px; display: flex; flex-direction: column; gap: 20px; justify-content: center; align-items: center; text-align: center; }
+        .gene-circle { width: 120px; height: 120px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 24px; font-weight: bold; border: 2px dashed rgba(255,255,255,0.2); position: relative; }
+        .gene-circle::after { content: ""; position: absolute; inset: -10px; border-radius: 50%; border: 1px solid transparent; border-top-color: inherit; animation: spin 4s linear infinite; }
+        @keyframes spin { 100% { transform: rotate(360deg); } }
+
+        /* =========================================
+           [視圖 4] 系統設定
+           ========================================= */
+        .settings-list { max-width: 600px; margin: 0 auto; display: flex; flex-direction: column; gap: 15px; padding-top: 40px; width: 100%; }
+        .setting-item { display: flex; justify-content: space-between; align-items: center; padding: 20px; }
+        .switch { position: relative; display: inline-block; width: 44px; height: 24px; }
+        .switch input { opacity: 0; width: 0; height: 0; }
+        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: rgba(255,255,255,0.1); transition: .4s; border-radius: 24px; }
+        .slider:before { position: absolute; content: ""; height: 16px; width: 16px; left: 4px; bottom: 4px; background-color: #aaa; transition: .4s; border-radius: 50%; }
+        input:checked + .slider { background-color: var(--color-dyn1); box-shadow: 0 0 10px var(--color-dyn1); }
+        input:checked + .slider:before { transform: translateX(20px); background-color: #000; }
+
+        /* 圖表點擊的 Modal 彈窗 (保留) */
+        .modal-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.75); z-index: 2000; display: none;
+            backdrop-filter: blur(12px); justify-content: center; align-items: center;
+        }
+        .modal-box { width: 500px; padding: 25px; display: flex; flex-direction: column; gap: 15px; }
+        .modal-title { font-size: 16px; font-weight: bold; border-bottom: 1px solid rgba(255,255,255,0.06); padding-bottom: 10px; color: #fff; }
+        .close-btn { align-self: flex-end; padding: 8px 18px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: #fff; border-radius: 4px; cursor: pointer; font-size: 12px; }
+    </style>
+</head>
+<body>
+
+<aside id="sidebar">
+    <div class="glass-title-text" id="brand-logo"><i class="fa-brands fa-connectdevelop"></i> 4D MATRIX</div>
+    <div class="menu-item active" onclick="switchView('view-dashboard', this)"><i class="fa-solid fa-chart-line"></i> 指揮中心</div>
+    <div class="menu-item" onclick="switchView('view-records', this)"><i class="fa-solid fa-list-ul"></i> 交易紀錄回溯</div>
+    <div class="menu-item" onclick="switchView('view-genes', this)"><i class="fa-solid fa-microchip"></i> AI 基因配置</div>
+    <div class="menu-item" style="margin-top: auto;" onclick="switchView('view-settings', this)"><i class="fa-solid fa-gear"></i> 系統設定</div>
+</aside>
+
+<div id="content-area">
+    <main id="view-dashboard" class="view-section active">
+        <div class="stat-grid">
+            <div class="glass-panel stat-card active-focus" id="card-DYN_1" onclick="handleCardClick('DYN_1', event)">
+                <div class="stat-title"><i class="fa-solid fa-rocket" style="color: var(--color-dyn1)"></i> DYN_1 積極 AI</div>
+                <div class="stat-value" id="val-dyn1">$ 100,000</div>
+                <div style="font-size: 11px; color: #888;">+ 0.00%</div>
+            </div>
+            <div class="glass-panel stat-card active-focus" id="card-DYN_2" onclick="handleCardClick('DYN_2', event)">
+                <div class="stat-title"><i class="fa-solid fa-shield-halved" style="color: var(--color-dyn2)"></i> DYN_2 穩健 AI</div>
+                <div class="stat-value" id="val-dyn2">$ 100,000</div>
+                <div style="font-size: 11px; color: #888;">+ 0.00%</div>
+            </div>
+            <div class="glass-panel stat-card active-focus" id="card-STA_1" onclick="handleCardClick('STA_1', event)">
+                <div class="stat-title"><i class="fa-solid fa-bolt" style="color: var(--color-sta1)"></i> STA_1 靜態積極</div>
+                <div class="stat-value" id="val-sta1">$ 100,000</div>
+                <div style="font-size: 11px; color: #888;">+ 0.00%</div>
+            </div>
+            <div class="glass-panel stat-card active-focus" id="card-STA_2" onclick="handleCardClick('STA_2', event)">
+                <div class="stat-title"><i class="fa-solid fa-layer-group" style="color: var(--color-sta2)"></i> STA_2 靜態穩健</div>
+                <div class="stat-value" id="val-sta2">$ 100,000</div>
+                <div style="font-size: 11px; color: #888;">+ 0.00%</div>
+            </div>
+        </div>
+
+        <div class="glass-panel" id="chart-container">
+            <div class="chart-header">
+                <div style="font-weight: bold; font-size: 13px; letter-spacing: 1px;"><i class="fa-solid fa-chart-area"></i> 宇宙總資產趨勢 (NAV)</div>
+                <div class="timeframe-selector" id="tf-group">
+                    <button class="tf-btn active" onclick="changeTimeframe(this, '1D')">1D</button>
+                    <button class="tf-btn" onclick="changeTimeframe(this, '1W')">1W</button>
+                    <button class="tf-btn" onclick="changeTimeframe(this, '1M')">1M</button>
+                    <button class="tf-btn" onclick="changeTimeframe(this, '3M')">3M</button>
+                    <button class="tf-btn" onclick="changeTimeframe(this, '1Y')">1Y</button>
+                </div>
+            </div>
+            <div class="chart-wrapper">
+                <canvas id="mainChart"></canvas>
+            </div>
+        </div>
+
+        <div id="ai-commander">
+            <div class="commander-inner">
+                <div class="ai-header">
+                    <span style="font-weight: bold; font-size: 12px;" id="terminal-title"><i class="fa-solid fa-terminal"></i> GEMINI 全宇宙同步 (RGB MODE)</span>
+                    <span style="font-size: 11px; color: #444;" id="terminal-status">STATUS: GLOBAL SYNC</span>
+                </div>
+                <div class="chat-display" id="chat-output">
+    <span style="color: rgba(255,255,255,0.5);">[SYSTEM]</span> 根據 2026-06-15 10:01 紀錄，四大宇宙完美同步。<br>
+    <span style="color: rgba(255,255,255,0.5);">[SYNC]</span> 現金部位: $80,002 | 股票庫存: 2002.TW (1047股) | NAV: $100,000<br>
+    <span style="color: #666;">等待指令...</span>
+                </div>
+                <div class="chat-input-area">
+                    <input type="text" id="chat-input" placeholder="詢問當前聚焦宇宙的戰略細節..." onkeypress="handleEnter(event)">
+                    <button class="send-btn" onclick="askAI()">EXECUTE</button>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <main id="view-records" class="view-section">
+        <h2 style="margin: 0; font-size: 18px; letter-spacing: 2px;"><i class="fa-solid fa-list-ul"></i> 近期交易紀錄</h2>
+        <div class="glass-panel records-table-container">
+            <table>
+                <thead><tr><th>時間</th><th>標的</th><th>動作</th><th>股數</th><th>價格</th><th>宇宙</th></tr></thead>
+                <tbody>
+                    <tr><td>2026-06-15 10:01</td><td>2002.TW</td><td><span class="badge-buy">BUY</span></td><td>1047</td><td>19.1</td><td>DYN_1</td></tr>
+                    <tr><td>2026-06-15 10:01</td><td>2002.TW</td><td><span class="badge-buy">BUY</span></td><td>1047</td><td>19.1</td><td>DYN_2</td></tr>
+                    <tr><td>2026-06-15 10:01</td><td>2002.TW</td><td><span class="badge-buy">BUY</span></td><td>1047</td><td>19.1</td><td>STA_1</td></tr>
+                    <tr><td>2026-06-15 10:01</td><td>2002.TW</td><td><span class="badge-buy">BUY</span></td><td>1047</td><td>19.1</td><td>STA_2</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </main>
+
+    <main id="view-genes" class="view-section">
+        <h2 style="margin: 0; font-size: 18px; letter-spacing: 2px;"><i class="fa-solid fa-dna"></i> 動態基因演化庫</h2>
+        <div class="gene-grid">
+            <div class="glass-panel gene-card">
+                <h3 style="margin:0; color: var(--color-dyn1);">DYN_1 積極核心</h3>
+                <div class="gene-circle" style="color: var(--color-dyn1); border-top-color: var(--color-dyn1);">3.0x</div>
+                <div style="font-size: 14px; color: #aaa;">
+                    <div><strong>ATR 移動防線:</strong> 3.0 倍</div>
+                    <div style="margin-top:5px;"><strong>單筆風險上限:</strong> 3.0%</div>
+                    <div style="margin-top:15px; font-size: 12px; color: #555;">[ 每週末自動重新擬合 ]</div>
+                </div>
+            </div>
+            <div class="glass-panel gene-card">
+                <h3 style="margin:0; color: var(--color-dyn2);">DYN_2 穩健護盾</h3>
+                <div class="gene-circle" style="color: var(--color-dyn2); border-top-color: var(--color-dyn2);">2.0x</div>
+                <div style="font-size: 14px; color: #aaa;">
+                    <div><strong>ATR 移動防線:</strong> 2.0 倍</div>
+                    <div style="margin-top:5px;"><strong>單筆風險上限:</strong> 2.0%</div>
+                    <div style="margin-top:15px; font-size: 12px; color: #555;">[ 每週末自動重新擬合 ]</div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <main id="view-settings" class="view-section">
+        <h2 style="margin: 0; font-size: 18px; letter-spacing: 2px; text-align: center;"><i class="fa-solid fa-gear"></i> 系統底層設定</h2>
+        <div class="settings-list">
+            <div class="glass-panel setting-item">
+                <div>
+                    <div style="font-weight: bold; color: #fff;">LINE 戰報自動推播</div>
+                    <div style="font-size: 12px; color: #777; margin-top: 4px;">觸發交易時自動傳送 4D 矩陣戰況至手機。</div>
+                </div>
+                <label class="switch"><input type="checkbox" checked><span class="slider"></span></label>
+            </div>
+            <div class="glass-panel setting-item">
+                <div>
+                    <div style="font-weight: bold; color: #fff;">Gemini 深度情緒解讀</div>
+                    <div style="font-size: 12px; color: #777; margin-top: 4px;">允許 AI 讀取新聞內文防止系統性崩盤 (消耗 API)。</div>
+                </div>
+                <label class="switch"><input type="checkbox" checked><span class="slider"></span></label>
+            </div>
+            <div class="glass-panel setting-item">
+                <div>
+                    <div style="font-weight: bold; color: #fff;">強制平倉斷路器</div>
+                    <div style="font-size: 12px; color: #777; margin-top: 4px;">當大盤單日跌幅超過 5% 時，強制清空所有宇宙庫存。</div>
+                </div>
+                <label class="switch"><input type="checkbox"><span class="slider"></span></label>
+            </div>
+        </div>
+    </main>
+</div>
+
+<div class="modal-overlay" id="detailModal" onclick="closeModal('detailModal')">
+    <div class="glass-panel modal-box" onclick="event.stopPropagation()">
+        <div class="modal-title" id="detail-title">宇宙詳情</div>
+        <div style="color: #bbb; font-size: 13px; line-height: 1.8;" id="detail-content"></div>
+        <button class="close-btn" onclick="closeModal('detailModal')">關閉</button>
+    </div>
+</div>
+
+<script>
+    /* =========================================
+       1. 游標高光追蹤 (僅作用於 glass-panel)
+       ========================================= */
+    document.addEventListener('mousemove', e => {
+        document.querySelectorAll('.glass-panel, .glass-title-text').forEach(el => {
+            const rect = el.getBoundingClientRect();
+            el.style.setProperty('--rx', `${e.clientX - rect.left}px`);
+            el.style.setProperty('--ry', `${e.clientY - rect.top}px`);
+        });
+    });
+
+    /* =========================================
+       2. 分頁無縫切換邏輯
+       ========================================= */
+    function switchView(viewId, menuItem) {
+        document.querySelectorAll('.menu-item').forEach(el => el.classList.remove('active'));
+        menuItem.classList.add('active');
+        document.querySelectorAll('.view-section').forEach(el => el.classList.remove('active'));
+        document.getElementById(viewId).classList.add('active');
+    }
+
+    /* =========================================
+       3. 矩陣狀態機邏輯 (0 與 4 判定)
+       ========================================= */
+    let selectedUniverses = ['DYN_1', 'DYN_2', 'STA_1', 'STA_2'];
+    const U_COLORS = { 'DYN_1': '#00ffaa', 'DYN_2': '#00d4ff', 'STA_1': '#ff4560', 'STA_2': '#feb019' };
+
+    function handleCardClick(universe, event) {
+        if (event.ctrlKey || event.metaKey) {
+            if (selectedUniverses.includes(universe)) {
+                selectedUniverses = selectedUniverses.filter(u => u !== universe);
+                if (selectedUniverses.length === 0) selectedUniverses = Object.keys(U_COLORS);
+            } else {
+                if (selectedUniverses.length === 4) selectedUniverses = [universe];
+                else selectedUniverses.push(universe);
+            }
+        } else {
+            if (selectedUniverses.length === 1 && selectedUniverses[0] === universe) {
+                selectedUniverses = Object.keys(U_COLORS);
+            } else {
+                selectedUniverses = [universe];
+            }
+        }
+        updateUIState();
+    }
+
+    function updateUIState() {
+        const allU = Object.keys(U_COLORS);
+        
+        allU.forEach(u => {
+            const card = document.getElementById(`card-${u}`);
+            if (selectedUniverses.includes(u)) {
+                card.classList.add('active-focus'); card.classList.remove('dimmed');
+            } else {
+                card.classList.remove('active-focus'); card.classList.add('dimmed');
+            }
+        });
+
+        allU.forEach((u, idx) => mainChart.setDatasetVisibility(idx, selectedUniverses.includes(u)));
+        mainChart.update();
+
+        const commander = document.getElementById('ai-commander');
+        const input = document.getElementById('chat-input');
+        const title = document.getElementById('terminal-title');
+        
+        if (selectedUniverses.length === 1) {
+            const color = U_COLORS[selectedUniverses[0]];
+            commander.style.setProperty('--commander-gradient', color);
+            commander.style.setProperty('--commander-glow-opacity', '0.15');
+            title.innerHTML = `<i class="fa-solid fa-terminal" style="color:${color}"></i> 聚焦: ${selectedUniverses[0]}`;
+            input.style.borderColor = color;
+        } else {
+            const colors = selectedUniverses.map(u => U_COLORS[u]);
+            let gradientStr;
+            if (colors.length === 4) {
+                gradientStr = 'rgba(255,255,255,0.15)'; 
+            } else {
+                gradientStr = `linear-gradient(60deg, ${colors.join(', ')})`;
+            }
+            commander.style.setProperty('--commander-gradient', gradientStr);
+            commander.style.setProperty('--commander-glow-opacity', colors.length === 4 ? '0.02' : '0.4');
+            title.innerHTML = `<i class="fa-solid fa-terminal"></i> 混合視圖: ${selectedUniverses.join(' + ')}`;
+            input.style.borderColor = 'rgba(255,255,255,0.06)';
+        }
+    }
+
+    /* =========================================
+       4. Chart.js 初始化與連動設定
+       ========================================= */
+    const realData = {
+        labels: ['09:00', '09:30', '10:00', '10:31', '11:01', 'Now'],
+        datasets: [
+            { label: 'DYN_1 (積極 AI)', data: [100000, 100000, 100000, 99895, 100000, 100000], borderColor: '#00ffaa', fill: false, tension: 0.1, pointRadius: 3, borderWidth: 2 },
+            { label: 'DYN_2 (穩健 AI)', data: [100000, 100000, 100000, 99895, 100000, 100000], borderColor: '#00d4ff', fill: false, tension: 0.1, pointRadius: 3, borderWidth: 2 }, // DYN_2 藍線改為實線
+            { label: 'STA_1 (靜態積極)', data: [100000, 100000, 100000, 99895, 100000, 100000], borderColor: '#ff4560', fill: false, tension: 0.1, pointRadius: 3, borderWidth: 2, borderDash: [2,4] },
+            { label: 'STA_2 (靜態穩健)', data: [100000, 100000, 100000, 99895, 100000, 100000], borderColor: '#feb019', fill: false, tension: 0.1, pointRadius: 3, borderWidth: 2, borderDash: [1,6] }
+        ]
+    };
+
+    const mainChart = new Chart(document.getElementById('mainChart').getContext('2d'), {
+        type: 'line',
+        data: JSON.parse(JSON.stringify(realData)),
+        options: {
+            responsive: true, maintainAspectRatio: false,
+            interaction: { mode: 'index', intersect: false },
+            plugins: {
+                legend: { display: false },
+                tooltip: { backgroundColor: 'rgba(0,0,0,0.8)', titleColor: '#fff', padding: 12 }
+            },
+            scales: {
+                y: { min: 99800, max: 100100, grid: { color: 'rgba(255,255,255,0.03)' }, ticks: { color: '#444' } },
+                x: { grid: { display: false }, ticks: { color: '#444' } }
+            },
+            onClick: (e, elements) => {
+                const activePoints = mainChart.getElementsAtEventForMode(e, 'nearest', { intersect: true }, false);
+                if (activePoints.length > 0) {
+                    const ds = mainChart.data.datasets[activePoints[0].datasetIndex];
+                    showUniverseDetail(ds.label, ds.borderColor);
+                }
+            }
+        }
+    });
+
+    function changeTimeframe(btn, tf) {
+        document.querySelectorAll('.tf-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        
+        let labels = tf === '1D' ? ['09:00', '09:30', '10:00', '10:31', '11:01', 'Now'] : 
+                     tf === '1W' ? ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Today'] :
+                     ['M-5', 'M-4', 'M-3', 'M-2', 'M-1', 'Today'];
+                     
+        mainChart.data.labels = labels;
+        mainChart.update();
+    }
+
+    /* =========================================
+       5. 互動與問答邏輯
+       ========================================= */
+    function showUniverseDetail(label, color) {
+        document.getElementById('detail-title').innerHTML = `<span style="color:${color}">●</span> ${label} 即時狀態`;
+        document.getElementById('detail-content').innerHTML = `
+            <table style="width:100%; border-collapse:collapse;">
+                <tr><td>可用殘額 (Cash):</td><td style="color:#fff; text-align:right;">$ 80,002</td></tr>
+                <tr><td>主要持股 (Core):</td><td style="color:#fff; text-align:right;">2002.TW (1047 股)</td></tr>
+                <tr><td>總資產 NAV:</td><td style="color:#fff; text-align:right;">$ 100,000</td></tr>
+            </table>`;
+        document.getElementById('detailModal').style.display = 'flex';
+    }
+
+    function closeModal(id) { document.getElementById(id).style.display = 'none'; }
+    function handleEnter(e) { if (e.key === 'Enter') askAI(); }
+
+    function askAI() {
+        const input = document.getElementById('chat-input');
+        const output = document.getElementById('chat-output');
+        const userMsg = input.value.trim();
+        if (!userMsg) return;
+
+        output.innerHTML += `<br><span style="color: #fff;">> ${userMsg}</span>`;
+        input.value = ""; output.scrollTop = output.scrollHeight;
+
+        setTimeout(() => {
+            const response = `[GEMINI] 根據 2026-06-15 11:01 紀錄，目前 ${selectedUniverses.join(', ')} 宇宙的資金運用完全重疊。中鋼 (2002) 佔比皆為 20%，觸發保護機制。防線已隨波段墊高，靜待後市突破。`;
+            let i = 0; let node = document.createElement('span'); node.style.color = '#fff'; output.appendChild(node);
+            function type() { if (i < response.length) { node.innerHTML += response.charAt(i++); output.scrollTop = output.scrollHeight; setTimeout(type, 15); } }
+            type();
+        }, 400);
+    }
+
+    // 啟動時強制跑一次全不選狀態初始化
+    updateUIState();
+</script>
+</body>
+</html>
