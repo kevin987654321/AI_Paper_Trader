@@ -4,7 +4,7 @@ import os
 # ⚙️ 基礎系統設定
 # ==========================================
 INITIAL_CAPITAL = 100000  # 初始模擬資金 10 萬
-GEMINI_API_KEY = "AQ.Ab8RN6L18rP27U8k31H9vWIMI91RCw_fudHuZQGjLLxZ3JCVRw"  # Gemini API Key
+GEMINI_API_KEY = "AQ.Ab8RN6LeAXsI7o_Radhv6FoeC2LtByaDBPAGHA6u06DnYJhG3w"  # Gemini API Key
 
 # ==========================================
 # 🌌 5.0 終極版：核心衛星配置名單
