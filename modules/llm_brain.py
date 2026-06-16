@@ -2,11 +2,7 @@ import os
 import pandas as pd
 from datetime import datetime
 import config
-import google.generativeai as genai
-
-# 初始化 Gemini 模型
-genai.configure(api_key=config.GEMINI_API_KEY)
-model = genai.GenerativeModel('gemini-3.5-flash')
+from google import genai  # 🌟 升級為 2026 最新版 SDK
 
 def log_gemini_analysis(news_text, analysis_result, final_decision):
     """將 Gemini 的分析過程記錄到日誌檔中"""
@@ -39,7 +35,12 @@ def analyze_sentiment(news_text):
     請先給出簡短的分析理由（50字內），最後在獨立的一行只輸出 "TRUE" (代表安全，可以買進) 或 "FALSE" (代表極度危險，禁止買進)。
     """
     try:
-        response = model.generate_content(prompt)
+        # 🌟 2026 最新 Client 語法
+        client = genai.Client(api_key=config.GEMINI_API_KEY)
+        response = client.models.generate_content(
+            model='gemini-3.5-flash',
+            contents=prompt
+        )
         result_text = response.text.strip()
         final_decision = "TRUE" in result_text.upper()
         log_gemini_analysis(news_text, result_text, final_decision)
@@ -48,8 +49,8 @@ def analyze_sentiment(news_text):
         print(f"⚠️ Gemini API 發生錯誤: {e}")
         return True # 若 API 壞掉，預設不阻擋武官交易
 
-def generate_daily_summary():
-    """盤後產生 4D 矩陣總結報告 (給 daily_report.py 呼叫)"""
+def generate_daily_report(): 
+    """🏆 修正函數名稱，無縫對接 daily_report.py，並產生 4D 矩陣總結"""
     today_str = datetime.now().strftime("%Y-%m-%d")
     
     # 讀取 4 個平行宇宙的最新狀態與今日交易
@@ -100,7 +101,12 @@ def generate_daily_summary():
     ━━━━━━━━━━━━━━
     """
     try:
-        response = model.generate_content(prompt)
+        # 🌟 2026 最新 Client 語法
+        client = genai.Client(api_key=config.GEMINI_API_KEY)
+        response = client.models.generate_content(
+            model='gemini-3.5-flash',
+            contents=prompt
+        )
         return response.text.strip()
     except Exception as e:
         return f"⚠️ 產生報告失敗: {e}"
