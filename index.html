@@ -169,7 +169,6 @@
             background: rgba(18, 18, 18, 0.85);
             backdrop-filter: blur(25px); -webkit-backdrop-filter: blur(25px);
             border-bottom-left-radius: 24px; border-bottom-right-radius: 24px;
-            /* 自動計算安全邊距與頂部空間 */
             padding: max(20px, env(safe-area-inset-top)) 20px 15px 20px;
             box-shadow: 0 15px 40px rgba(0,0,0,0.6);
             transform: translateY(-100%);
@@ -229,13 +228,13 @@
             
             .gene-grid { grid-template-columns: 1fr; }
             
-            /* 🌟 手機版交易紀錄極限壓縮，嚴格禁止橫向卷軸 */
+            /* 🌟 手機版交易紀錄極限壓縮，嚴格禁止橫向卷軸，但保留年份 */
             .records-table-container { padding: 10px 5px; overflow-x: hidden; }
             .records-table-container table { font-size: 11px; table-layout: auto; width: 100%; }
             .records-table-container th, .records-table-container td { 
                 padding: 10px 4px; white-space: nowrap; 
             }
-            .records-table-container td:first-child { font-size: 10px; letter-spacing: -0.3px; } /* 時間欄位縮小 */
+            .records-table-container td:first-child { font-size: 10px; letter-spacing: -0.3px; }
             .badge-buy, .badge-sell { padding: 2px 4px; font-size: 9px; }
         }
     </style>
@@ -429,7 +428,7 @@
     document.getElementById('val-sta1').innerText = "$ " + s1[s1.length - 1].toLocaleString(undefined, {maximumFractionDigits: 0});
     document.getElementById('val-sta2').innerText = "$ " + s2[s2.length - 1].toLocaleString(undefined, {maximumFractionDigits: 0});
 
-    // 🌟 真實時間軸過濾邏輯
+    // 🌟 嚴格 1D 真實時間軸過濾邏輯
     function updateChartTimeframe(tf) {
         currentGlobalTimeframe = tf || currentGlobalTimeframe;
         if (typeof NAV_HISTORY === 'undefined' || !NAV_HISTORY.labels) return;
@@ -440,20 +439,33 @@
         let startIndex = 0;
         
         if (chartTimestamps.length === totalPoints && currentGlobalTimeframe !== '1Y') {
-            const latestTime = chartTimestamps[totalPoints - 1]; 
-            let msLimit = Infinity;
-            switch(currentGlobalTimeframe) {
-                case '1D': msLimit = 24 * 60 * 60 * 1000; break;
-                case '1W': msLimit = 7 * 24 * 60 * 60 * 1000; break;
-                case '1M': msLimit = 30 * 24 * 60 * 60 * 1000; break;
-                case '3M': msLimit = 90 * 24 * 60 * 60 * 1000; break;
-            }
+            const latestTimeMs = chartTimestamps[totalPoints - 1]; 
             
-            if (msLimit !== Infinity) {
+            if (currentGlobalTimeframe === '1D') {
+                // 🌟 1D：取得最後一筆資料的「該日 00:00」，只顯示當日開盤到現在
+                const latestDate = new Date(latestTimeMs);
+                const startOfDay = new Date(latestDate.getFullYear(), latestDate.getMonth(), latestDate.getDate()).getTime();
+                
                 for (let i = 0; i < totalPoints; i++) {
-                    if (latestTime - chartTimestamps[i] <= msLimit) {
+                    if (chartTimestamps[i] >= startOfDay) {
                         startIndex = i;
                         break;
+                    }
+                }
+            } else {
+                let msLimit = Infinity;
+                switch(currentGlobalTimeframe) {
+                    case '1W': msLimit = 7 * 24 * 60 * 60 * 1000; break;
+                    case '1M': msLimit = 30 * 24 * 60 * 60 * 1000; break;
+                    case '3M': msLimit = 90 * 24 * 60 * 60 * 1000; break;
+                }
+                
+                if (msLimit !== Infinity) {
+                    for (let i = 0; i < totalPoints; i++) {
+                        if (latestTimeMs - chartTimestamps[i] <= msLimit) {
+                            startIndex = i;
+                            break;
+                        }
                     }
                 }
             }
@@ -725,7 +737,7 @@
     }
 
     /* =========================================
-       6. 🌟 智慧防誤觸與側邊欄/彈窗滑動邏輯 (Swipe Lock)
+       6. 🌟 智慧防誤觸與側邊欄滑動解鎖 (Swipe Unlocked)
        ========================================= */
     const sidebarEl = document.getElementById('sidebar');
     const overlayEl = document.getElementById('sidebar-overlay');
@@ -747,7 +759,9 @@
 
     document.addEventListener('touchstart', (e) => {
         if (window.innerWidth > 768) return; 
-        const ignoreSwipeSelectors = ['canvas', '.records-table-container', '.chat-display', 'input', '.tf-btn', '.modal-top-box'];
+        
+        // 🌟 解除表格與終端區的鎖定：只鎖定按鈕、圖表本體與彈窗，其他地方橫滑皆可開選單
+        const ignoreSwipeSelectors = ['canvas', '.tf-btn', '.modal-top-box'];
         if (e.target.closest(ignoreSwipeSelectors.join(', '))) {
             isDraggingMenu = false;
             return;
@@ -942,7 +956,7 @@
         
         const filtered = allLedgerRecords.filter(r => selectedUniverses.includes(r.universe));
         if (filtered.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; color:#555; padding:40px; font-size:12px;">聚焦宇宙當前尚無實質交易事件</td></tr>`;
+            tbody.innerHTML = `<tr><td colspan=\"6\" style=\"text-align:center; color:#555; padding:40px; font-size:12px;\">聚焦宇宙當前尚無實質交易事件</td></tr>`;
             return;
         }
         
