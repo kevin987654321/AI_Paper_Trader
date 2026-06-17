@@ -39,7 +39,6 @@
         ::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.15); border-radius: 10px; }
         ::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.3); }
 
-        /* 使用 100dvh 解決 iOS 底部裁切問題 */
         html, body {
             background: var(--bg-gradient); color: var(--text-main);
             font-family: "Inter", "Microsoft JhengHei", sans-serif;
@@ -93,7 +92,6 @@
         }
         .view-section.active { opacity: 1; pointer-events: auto; }
 
-        /* 視圖元件 */
         .stat-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; height: 96px; flex-shrink: 0; }
         .stat-card { padding: 16px; cursor: pointer; border-color: rgba(255,255,255,0.04); }
         .stat-card.active-focus { background: rgba(255, 255, 255, 0.04); box-shadow: inset 0 0 15px rgba(255,255,255,0.02); }
@@ -143,6 +141,7 @@
         td { padding: 15px; color: #ccc; border-bottom: 1px solid rgba(255,255,255,0.03); }
         tr:hover td { background: rgba(255,255,255,0.05); color: #fff; }
         .badge-buy { background: rgba(0,255,170,0.1); color: #00ffaa; padding: 4px 8px; border-radius: 4px; border: 1px solid rgba(0,255,170,0.3); }
+        .badge-sell { background: rgba(255,69,96,0.1); color: #ff4560; padding: 4px 8px; border-radius: 4px; border: 1px solid rgba(255,69,96,0.3); }
 
         .gene-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; flex: 1; align-content: start; }
         .gene-card { padding: 30px; display: flex; flex-direction: column; gap: 20px; justify-content: center; align-items: center; text-align: center; }
@@ -199,7 +198,6 @@
             .view-section {
                 top: 60px; height: calc(100dvh - 60px); 
                 padding: 15px; 
-                /* 加入安全邊距防止 iOS 底部橫條遮擋 */
                 padding-bottom: max(15px, env(safe-area-inset-bottom));
             }
             .stat-grid { grid-template-columns: repeat(2, 1fr); height: auto; margin-bottom: 5px; }
@@ -234,7 +232,8 @@
     <div id="mobile-header">
         <button class="mobile-menu-btn" onclick="toggleSidebar()"><i class="fa-solid fa-bars"></i></button>
         <div style="font-weight: 900; letter-spacing: 3px; font-size: 16px; color: #fff;"><i class="fa-brands fa-connectdevelop"></i> 4D MATRIX</div>
-        <div style="width: 30px;"></div> </div>
+        <div style="width: 30px;"></div>
+    </div>
 
     <main id="view-dashboard" class="view-section active">
         <div class="stat-grid">
@@ -297,11 +296,7 @@
             <table>
                 <thead><tr><th>時間</th><th>標的</th><th>動作</th><th>股數</th><th>價格</th><th>宇宙</th></tr></thead>
                 <tbody>
-                    <tr><td>2026-06-15 10:01</td><td>2002.TW</td><td><span class="badge-buy">BUY</span></td><td>1047</td><td>19.1</td><td>DYN_1</td></tr>
-                    <tr><td>2026-06-15 10:01</td><td>2002.TW</td><td><span class="badge-buy">BUY</span></td><td>1047</td><td>19.1</td><td>DYN_2</td></tr>
-                    <tr><td>2026-06-15 10:01</td><td>2002.TW</td><td><span class="badge-buy">BUY</span></td><td>1047</td><td>19.1</td><td>STA_1</td></tr>
-                    <tr><td>2026-06-15 10:01</td><td>2002.TW</td><td><span class="badge-buy">BUY</span></td><td>1047</td><td>19.1</td><td>STA_2</td></tr>
-                </tbody>
+                    </tbody>
             </table>
         </div>
     </main>
@@ -368,20 +363,76 @@
 
 <script>
     /* =========================================
-       0. 終極數據橋接：讀取 Python 產出的真實快照數據
+       0. 數據橋接核心與時間軸過濾器
        ========================================= */
     let chartLabels = ['等待啟動'];
     let d1 = [100000], d2 = [100000], s1 = [100000], s2 = [100000];
+    let currentGlobalTimeframe = '1D';
 
     if (typeof NAV_HISTORY !== 'undefined') {
-        chartLabels = NAV_HISTORY.labels; d1 = NAV_HISTORY.DYN_1;
-        d2 = NAV_HISTORY.DYN_2; s1 = NAV_HISTORY.STA_1; s2 = NAV_HISTORY.STA_2;
+        chartLabels = NAV_HISTORY.labels; 
+        d1 = NAV_HISTORY.DYN_1;
+        d2 = NAV_HISTORY.DYN_2; 
+        s1 = NAV_HISTORY.STA_1; 
+        s2 = NAV_HISTORY.STA_2;
     }
 
     document.getElementById('val-dyn1').innerText = "$ " + d1[d1.length - 1].toLocaleString();
     document.getElementById('val-dyn2').innerText = "$ " + d2[d2.length - 1].toLocaleString();
     document.getElementById('val-sta1').innerText = "$ " + s1[s1.length - 1].toLocaleString();
     document.getElementById('val-sta2').innerText = "$ " + s2[s2.length - 1].toLocaleString();
+
+    function updateChartTimeframe(tf) {
+        currentGlobalTimeframe = tf || currentGlobalTimeframe;
+        if (typeof NAV_HISTORY === 'undefined' || !NAV_HISTORY.labels) return;
+        
+        const allLabels = NAV_HISTORY.labels;
+        const totalPoints = allLabels.length;
+        if (totalPoints === 0) return;
+        
+        let startIndex = 0;
+        
+        try {
+            const latestTime = new Date(allLabels[totalPoints - 1]).getTime();
+            let msLimit = Infinity;
+            switch(currentGlobalTimeframe) {
+                case '1D': msLimit = 24 * 60 * 60 * 1000; break;
+                case '1W': msLimit = 7 * 24 * 60 * 60 * 1000; break;
+                case '1M': msLimit = 30 * 24 * 60 * 60 * 1000; break;
+                case '3M': msLimit = 90 * 24 * 60 * 60 * 1000; break;
+                case '1Y': msLimit = 365 * 24 * 60 * 60 * 1000; break;
+            }
+            
+            if (msLimit !== Infinity) {
+                for (let i = 0; i < totalPoints; i++) {
+                    const t = new Date(allLabels[i]).getTime();
+                    if (!isNaN(t) && (latestTime - t <= msLimit)) {
+                        startIndex = i;
+                        break;
+                    }
+                }
+            }
+        } catch (e) {
+            startIndex = 0;
+        }
+        
+        // 彈性備用方案：若時間戳解析未產生顯著區隔，則依回溯點數比例進行精準切片
+        if (startIndex === 0 && currentGlobalTimeframe !== '1Y') {
+            switch(currentGlobalTimeframe) {
+                case '1D': startIndex = Math.max(0, totalPoints - 12); break;
+                case '1W': startIndex = Math.max(0, totalPoints - 48); break;
+                case '1M': startIndex = Math.max(0, totalPoints - 160); break;
+                case '3M': startIndex = Math.max(0, totalPoints - 450); break;
+            }
+        }
+        
+        mainChart.data.labels = allLabels.slice(startIndex);
+        mainChart.data.datasets[0].data = d1.slice(startIndex);
+        mainChart.data.datasets[1].data = d2.slice(startIndex);
+        mainChart.data.datasets[2].data = s1.slice(startIndex);
+        mainChart.data.datasets[3].data = s2.slice(startIndex);
+        mainChart.update();
+    }
 
     /* =========================================
        1. 游標高光追蹤 (電腦版限定效果)
@@ -405,6 +456,10 @@
         
         if (window.innerWidth <= 768 && sidebarEl.classList.contains('open')) {
             toggleSidebar();
+        }
+
+        if (viewId === 'view-records') {
+            renderLedgerTable();
         }
     }
 
@@ -435,6 +490,7 @@
             }
         }
         updateUIState();
+        renderLedgerTable(); // 同步過濾近期交易紀錄
     }
 
     function updateUIState() {
@@ -471,7 +527,7 @@
     }
 
     /* =========================================
-       4. Chart.js 初始化與真實數據載入
+       4. Chart.js 初始化與真實數據分析彈窗
        ========================================= */
     const chartData = {
         labels: chartLabels,
@@ -495,9 +551,9 @@
                     grid: { display: false }, 
                     ticks: { 
                         color: '#666',
-                        maxRotation: 0, /* 強制水平，禁止文字傾斜 */
+                        maxRotation: 0, 
                         autoSkip: true,
-                        maxTicksLimit: 5, /* 最多顯示 5 個標籤避免重疊 */
+                        maxTicksLimit: 5, 
                         font: { size: 10 }
                     } 
                 }
@@ -515,14 +571,35 @@
     function changeTimeframe(btn, tf) {
         document.querySelectorAll('.tf-btn').forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
+        updateChartTimeframe(tf);
     }
 
     function showUniverseDetail(label, color) {
-        document.getElementById('detail-title').innerHTML = `<span style="color:${color}">●</span> ${label} 歷史數據`;
+        let key = 'DYN_1';
+        if (label.includes('DYN_2') || label.includes('穩健 AI')) key = 'DYN_2';
+        if (label.includes('STA_1') || label.includes('靜態積極')) key = 'STA_1';
+        if (label.includes('STA_2') || label.includes('靜態穩健')) key = 'STA_2';
+        
+        let arr = [100000];
+        if (typeof NAV_HISTORY !== 'undefined' && NAV_HISTORY[key]) {
+            arr = NAV_HISTORY[key];
+        }
+        
+        const latest = arr[arr.length - 1];
+        const initial = arr[0];
+        const highest = Math.max(...arr);
+        const lowest = Math.min(...arr);
+        const totalReturn = ((latest - initial) / initial * 100).toFixed(2);
+        const returnColor = totalReturn >= 0 ? '#00ffaa' : '#ff4560';
+
+        document.getElementById('detail-title').innerHTML = `<span style="color:${color}">●</span> ${label} 核心量化透視`;
         document.getElementById('detail-content').innerHTML = `
-            <table style="width:100%; border-collapse:collapse;">
-                <tr><td>最新總資產 NAV:</td><td style="color:#fff; text-align:right;">即時監控中</td></tr>
-                <tr><td>防禦狀態:</td><td style="color:#fff; text-align:right;">ATR 移動停損運作中</td></tr>
+            <table style="width:100%; border-collapse:collapse; font-family:monospace; font-size:13px;">
+                <tr style="border-bottom:1px solid rgba(255,255,255,0.05);"><td style="padding:8px 0; color:#888;">最新資產淨值:</td><td style="text-align:right; color:#fff; font-weight:bold;">$ ${latest.toLocaleString(undefined, {minimumFractionDigits:1, maximumFractionDigits:1})}</td></tr>
+                <tr style="border-bottom:1px solid rgba(255,255,255,0.05);"><td style="padding:8px 0; color:#888;">歷史峰值 (Max):</td><td style="text-align:right; color:#00ffaa;">$ ${highest.toLocaleString(undefined, {minimumFractionDigits:1, maximumFractionDigits:1})}</td></tr>
+                <tr style="border-bottom:1px solid rgba(255,255,255,0.05);"><td style="padding:8px 0; color:#888;">歷史谷值 (Min):</td><td style="text-align:right; color:#ff4560;">$ ${lowest.toLocaleString(undefined, {minimumFractionDigits:1, maximumFractionDigits:1})}</td></tr>
+                <tr style="border-bottom:1px solid rgba(255,255,255,0.05);"><td style="padding:8px 0; color:#888;">累計歷史回報率:</td><td style="text-align:right; color:${returnColor}; font-weight:bold;">${totalReturn >= 0 ? '+' : ''}${totalReturn}%</td></tr>
+                <tr><td style="padding:8px 0; color:#888;">策略防禦狀態:</td><td style="text-align:right; color:#fff;">ATR 智能移動追蹤停損運作中</td></tr>
             </table>`;
         document.getElementById('detailModal').style.display = 'flex';
     }
@@ -682,8 +759,162 @@
         touchStartX = 0; touchStartY = 0; touchCurrentX = 0;
     });
 
-    // 啟動時強制跑一次初始化
+    /* =========================================
+       7. 虛值實做補全：非同步 CSV 帳本與動態設定核心
+       ========================================= */
+    let allLedgerRecords = [];
+
+    async function loadAllLedgers() {
+        const universes = [
+            { name: 'DYN_1', path: 'data/ledger_dyn_1_agg.csv' },
+            { name: 'DYN_2', path: 'data/ledger_dyn_2_con.csv' },
+            { name: 'STA_1', path: 'data/ledger_sta_1_agg.csv' },
+            { name: 'STA_2', path: 'data/ledger_sta_2_con.csv' }
+        ];
+        
+        allLedgerRecords = [];
+        let loadedCount = 0;
+        
+        for (const u of universes) {
+            try {
+                const response = await fetch(u.path);
+                if (!response.ok) continue;
+                const text = await response.text();
+                const records = parseCSVLedger(text, u.name);
+                allLedgerRecords = allLedgerRecords.concat(records);
+                loadedCount++;
+            } catch (e) {
+                console.warn(`[CSV LOADER] 無法讀取 ${u.name} 異步帳本:`, e);
+            }
+        }
+        
+        // 依照時間戳記由新到舊排序
+        allLedgerRecords.sort((a, b) => new Date(b.time) - new Date(a.time));
+        renderLedgerTable();
+        
+        const output = document.getElementById('chat-output');
+        if (loadedCount > 0 && output) {
+            output.innerHTML += `<br><span style="color: #00ffaa;">[SYSTEM]</span> 成功同步 ${loadedCount} 個矩陣核心帳本，共 ${allLedgerRecords.length} 筆即時交易明細。`;
+            output.scrollTop = output.scrollHeight;
+        } else if (window.location.protocol === 'file:' && output) {
+            output.innerHTML += `<br><span style="color: #feb019;">[SYSTEM] 提示: 偵測到本地 file:// 協議限制。為使非同步 CSV 數據流生效，請推送到 GitHub Pages 或啟動本地 Local Server 測試。</span>`;
+            output.scrollTop = output.scrollHeight;
+        }
+    }
+
+    function parseCSVLedger(text, universeName) {
+        const lines = text.split('\n');
+        if (lines.length <= 1) return [];
+        
+        const headers = lines[0].split(',').map(h => h.trim().toLowerCase());
+        const records = [];
+        
+        const timeIdx = headers.findIndex(h => h.includes('time') || h.includes('時間') || h.includes('date'));
+        const tickerIdx = headers.findIndex(h => h.includes('ticker') || h.includes('標的') || h.includes('symbol'));
+        const actionIdx = headers.findIndex(h => h.includes('action') || h.includes('動作') || h.includes('type') || h.includes('side'));
+        const qtyIdx = headers.findIndex(h => h.includes('qty') || h.includes('股數') || h.includes('quantity'));
+        const priceIdx = headers.findIndex(h => h.includes('price') || h.includes('價格'));
+        
+        for (let i = 1; i < lines.length; i++) {
+            const line = lines[i].trim();
+            if (!line) continue;
+            const cols = line.split(',');
+            
+            const rawTime = timeIdx !== -1 && cols[timeIdx] ? cols[timeIdx].replace(/"/g, '').trim() : '未知';
+            
+            records.push({
+                time: rawTime,
+                ticker: tickerIdx !== -1 && cols[tickerIdx] ? cols[tickerIdx].replace(/"/g, '').trim() : '未知',
+                action: actionIdx !== -1 && cols[actionIdx] ? cols[actionIdx].replace(/"/g, '').trim().toUpperCase() : 'BUY',
+                qty: qtyIdx !== -1 && cols[qtyIdx] ? parseInt(cols[qtyIdx].replace(/"/g, '')) : 0,
+                price: priceIdx !== -1 && cols[priceIdx] ? parseFloat(cols[priceIdx].replace(/"/g, '')) : 0.0,
+                universe: universeName
+            });
+        }
+        return records;
+    }
+
+    function renderLedgerTable() {
+        const tbody = document.querySelector('#view-records table tbody');
+        if (!tbody) return;
+        
+        // 自動跟隨儀表板選取的宇宙陣列進行連動過濾
+        const filtered = allLedgerRecords.filter(r => selectedUniverses.includes(r.universe));
+        
+        if (filtered.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; color:#555; padding:40px; font-size:12px;">聚焦宇宙當前尚無交易事件或本地模擬帳本為空</td></tr>`;
+            return;
+        }
+        
+        tbody.innerHTML = filtered.map(r => {
+            const isBuy = r.action.includes('BUY');
+            const badgeClass = isBuy ? 'badge-buy' : 'badge-sell';
+            return `
+                <tr>
+                    <td>${r.time}</td>
+                    <td>${r.ticker}</td>
+                    <td><span class="${badgeClass}">${r.action}</span></td>
+                    <td>${r.qty.toLocaleString()}</td>
+                    <td>${r.price.toFixed(1)}</td>
+                    <td style="color: ${U_COLORS[r.universe]}; font-weight:bold;">${r.universe}</td>
+                </tr>
+            `;
+        }).join('');
+    }
+
+    async function loadDynamicGenes() {
+        try {
+            const response = await fetch('data/dynamic_config.json');
+            if (!response.ok) return;
+            const config = await response.json();
+            
+            if (config.DYN_1) {
+                const card1 = document.querySelector('.gene-grid .glass-panel:nth-child(1)');
+                if (card1) {
+                    card1.querySelector('.gene-circle').innerText = config.DYN_1.atr.toFixed(1) + 'x';
+                    card1.querySelector('div div:nth-child(1) strong').nextSibling.textContent = ` ${config.DYN_1.atr.toFixed(1)} 倍`;
+                    card1.querySelector('div div:nth-child(2) strong').nextSibling.textContent = ` ${(config.DYN_1.risk * 100).toFixed(1)}%`;
+                }
+            }
+            if (config.DYN_2) {
+                const card2 = document.querySelector('.gene-grid .glass-panel:nth-child(2)');
+                if (card2) {
+                    card2.querySelector('.gene-circle').innerText = config.DYN_2.atr.toFixed(1) + 'x';
+                    card2.querySelector('div div:nth-child(1) strong').nextSibling.textContent = ` ${config.DYN_2.atr.toFixed(1)} 倍`;
+                    card2.querySelector('div div:nth-child(2) strong').nextSibling.textContent = ` ${(config.DYN_2.risk * 100).toFixed(1)}%`;
+                }
+            }
+        } catch (e) {
+            console.log("[GENE OPTIMIZER] 未發現動態權重覆蓋檔，沿用底層系統基因預設值。");
+        }
+    }
+
+    function initSettingsPersistence() {
+        const switches = document.querySelectorAll('.setting-item input[type="checkbox"]');
+        switches.forEach((sw, idx) => {
+            const storageKey = `CORE_SETTING_VAL_${idx}`;
+            const savedState = localStorage.getItem(storageKey);
+            if (savedState !== null) {
+                sw.checked = savedState === 'true';
+            }
+            sw.addEventListener('change', () => {
+                localStorage.setItem(storageKey, sw.checked);
+                const output = document.getElementById('chat-output');
+                if (output) {
+                    const settingName = sw.parentElement.parentElement.querySelector('div div').innerText;
+                    output.innerHTML += `<br><span style="color: rgba(255,255,255,0.4);">[SYSTEM]</span> 控制核心變更: 「${settingName}」已切換為 [${sw.checked ? 'ENABLED' : 'DISABLED'}]`;
+                    output.scrollTop = output.scrollHeight;
+                }
+            });
+        });
+    }
+
+    // 系統初始化序列啟動
+    initSettingsPersistence();
+    loadAllLedgers();
+    loadDynamicGenes();
     updateUIState();
+    updateChartTimeframe('1D'); // 初始化為 1D 區間
 </script>
 </body>
 </html>
