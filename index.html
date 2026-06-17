@@ -1,6 +1,8 @@
 <!DOCTYPE html>
 <html lang="zh-Hant" class="notranslate" translate="no">
 <head>
+	<script src="env.js" onerror="console.warn('未找到 env.js，請確定本地有此檔案')"></script>
+    <script src="data/nav_data.js" onerror="console.warn('等待 Python 產出第一筆 nav_data.js')"></script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="google" content="notranslate">
@@ -516,8 +518,18 @@
         const userMsg = input.value.trim();
         if (!userMsg) return;
 
-        // 🌟 在這裡寫死你的真實金鑰
-        const HARDCODED_API_KEY = "AQ.Ab8RN6LeAXsI7o_Radhv6FoeC2LtByaDBPAGHA6u06DnYJhG3w";
+        let HARDCODED_API_KEY = localStorage.getItem('MY_GEMINI_KEY');
+
+		// 如果沒找到，就跳出視窗請你自己輸入
+		if (!HARDCODED_API_KEY) {
+			HARDCODED_API_KEY = prompt("請輸入你的 Gemini API 金鑰 (只需輸入一次，會儲存在本機瀏覽器)：");
+			if (HARDCODED_API_KEY) {
+				localStorage.setItem('MY_GEMINI_KEY', HARDCODED_API_KEY);
+			} else {
+				alert("必須輸入金鑰才能啟動指揮中心 AI！");
+				return; // 取消執行
+			}
+		}
 
         output.innerHTML += `<br><span style="color: #fff;">> ${userMsg}</span>`;
         input.value = ""; 
