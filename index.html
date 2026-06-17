@@ -158,16 +158,32 @@
         input:checked + .slider { background-color: var(--color-dyn1); box-shadow: 0 0 10px var(--color-dyn1); }
         input:checked + .slider:before { transform: translateX(20px); background-color: #000; }
 
-        /* 🌟 高質感霧化毛玻璃彈窗 */
+        /* 🌟 頂層下滑式霧化彈窗 (Top Sheet Modal) */
         .modal-overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0, 0, 0, 0.3); z-index: 2000; display: none;
+            background: rgba(0, 0, 0, 0.3); z-index: 2000;
             backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px);
-            justify-content: center; align-items: center;
+            display: flex; justify-content: center; align-items: flex-start;
+            opacity: 0; visibility: hidden; transition: opacity 0.3s, visibility 0.3s;
         }
-        .modal-box { width: 500px; padding: 25px; display: flex; flex-direction: column; gap: 15px; }
+        .modal-overlay.show { opacity: 1; visibility: visible; }
+        .modal-box {
+            position: relative; width: 100%; max-width: 600px;
+            background: rgba(15, 15, 15, 0.85);
+            border: 1px solid rgba(255,255,255,0.05); border-top: none;
+            border-radius: 0 0 24px 24px;
+            padding: 25px 25px 15px 25px;
+            box-shadow: 0 15px 40px rgba(0,0,0,0.6);
+            transform: translateY(-100%);
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .modal-overlay.show .modal-box { transform: translateY(0); }
+        
+        .swipe-handle {
+            width: 45px; height: 5px; border-radius: 3px;
+            background: rgba(255,255,255,0.25); margin: 20px auto 0; cursor: pointer;
+        }
         .modal-title { font-size: 16px; font-weight: bold; border-bottom: 1px solid rgba(255,255,255,0.06); padding-bottom: 10px; color: #fff; }
-        .close-btn { align-self: flex-end; padding: 8px 18px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: #fff; border-radius: 4px; cursor: pointer; font-size: 12px; }
 
         /* =========================================
            📱 手機版專屬樣式 (Mobile Responsive)
@@ -214,7 +230,14 @@
             .send-btn { width: 75px; padding: 0; font-size: 11px; flex-shrink: 0; }
             
             .gene-grid { grid-template-columns: 1fr; }
-            .modal-box { width: 90%; }
+            
+            /* 🌟 手機版完美表格壓縮 (無橫向捲軸) */
+            .records-table-container { padding: 10px 5px; overflow-x: hidden; }
+            table { font-size: 11px; table-layout: auto; width: 100%; }
+            th, td { padding: 10px 2px; text-align: center; }
+            th:nth-child(1), td:nth-child(1) { text-align: left; padding-left: 5px; } /* 時間靠左 */
+            th:nth-child(6), td:nth-child(6) { text-align: right; padding-right: 5px; } /* 宇宙靠右 */
+            .badge-buy, .badge-sell { padding: 3px 5px; font-size: 9px; }
         }
     </style>
 </head>
@@ -298,7 +321,7 @@
         <h2 style="margin: 0; font-size: 18px; letter-spacing: 2px;"><i class="fa-solid fa-list-ul"></i> 近期交易紀錄</h2>
         <div class="glass-panel records-table-container">
             <table>
-                <thead><tr><th>本地時間</th><th>標的</th><th>動作</th><th>股數</th><th>價格</th><th>宇宙</th></tr></thead>
+                <thead><tr><th>時間</th><th>標的</th><th>動作</th><th>股數</th><th>價格</th><th>宇宙</th></tr></thead>
                 <tbody>
                     </tbody>
             </table>
@@ -358,11 +381,10 @@
 </div>
 
 <div class="modal-overlay" id="detailModal" onclick="closeModal('detailModal')">
-    <div class="glass-panel modal-box" onclick="event.stopPropagation()">
+    <div class="glass-panel modal-box" id="detailModalBox" onclick="event.stopPropagation()">
         <div class="modal-title" id="detail-title">宇宙詳情</div>
         <div style="color: #bbb; font-size: 13px; line-height: 1.8;" id="detail-content"></div>
-        <button class="close-btn" onclick="closeModal('detailModal')">關閉</button>
-    </div>
+        <div class="swipe-handle"></div> </div>
 </div>
 
 <script>
@@ -370,7 +392,7 @@
        0. 數據橋接核心與真實時間戳記轉化
        ========================================= */
     let chartLabels = ['等待啟動'];
-    let chartTimestamps = []; // 儲存真實毫秒時間戳
+    let chartTimestamps = []; 
     let d1 = [100000], d2 = [100000], s1 = [100000], s2 = [100000];
     let currentGlobalTimeframe = '1D';
 
@@ -378,7 +400,6 @@
         const currentYear = new Date().getFullYear();
         chartTimestamps = [];
         
-        // 將 UTC 轉為本地時間，並記錄真實時間戳供 1D/1W 過濾使用
         chartLabels = NAV_HISTORY.labels.map(label => {
             const parts = label.split(' ');
             if(parts.length === 2) {
@@ -396,10 +417,8 @@
             chartTimestamps.push(Date.now());
             return label;
         });
-        d1 = NAV_HISTORY.DYN_1;
-        d2 = NAV_HISTORY.DYN_2; 
-        s1 = NAV_HISTORY.STA_1; 
-        s2 = NAV_HISTORY.STA_2;
+        d1 = NAV_HISTORY.DYN_1; d2 = NAV_HISTORY.DYN_2; 
+        s1 = NAV_HISTORY.STA_1; s2 = NAV_HISTORY.STA_2;
     }
 
     document.getElementById('val-dyn1').innerText = "$ " + d1[d1.length - 1].toLocaleString(undefined, {minimumFractionDigits:1, maximumFractionDigits:1});
@@ -407,7 +426,7 @@
     document.getElementById('val-sta1').innerText = "$ " + s1[s1.length - 1].toLocaleString(undefined, {minimumFractionDigits:1, maximumFractionDigits:1});
     document.getElementById('val-sta2').innerText = "$ " + s2[s2.length - 1].toLocaleString(undefined, {minimumFractionDigits:1, maximumFractionDigits:1});
 
-    // 🌟 真實時間軸過濾邏輯：透過毫秒嚴格往前切換 24 小時、7 天等
+    // 🌟 真實時間軸過濾邏輯
     function updateChartTimeframe(tf) {
         currentGlobalTimeframe = tf || currentGlobalTimeframe;
         if (typeof NAV_HISTORY === 'undefined' || !NAV_HISTORY.labels) return;
@@ -418,7 +437,7 @@
         let startIndex = 0;
         
         if (chartTimestamps.length === totalPoints && currentGlobalTimeframe !== '1Y') {
-            const latestTime = chartTimestamps[totalPoints - 1]; // 取最後一筆的時間
+            const latestTime = chartTimestamps[totalPoints - 1]; 
             let msLimit = Infinity;
             switch(currentGlobalTimeframe) {
                 case '1D': msLimit = 24 * 60 * 60 * 1000; break;
@@ -566,14 +585,13 @@
         }
     });
 
-    // 🌟 手機版圖表提示框修改：放開手指立即消失
+    // 🌟 手機版圖表提示框：放開手指立即消失，不留殘影
     canvasEl.addEventListener('touchend', () => {
         if (window.innerWidth <= 768) {
-            // 延遲 50ms 確保 onClick 能正常觸發叫出彈窗
             setTimeout(() => {
                 mainChart.tooltip.setActiveElements([], {x:0, y:0});
                 mainChart.update();
-            }, 50);
+            }, 50); // 延遲確保 onClick 依然能觸發彈窗
         }
     });
 
@@ -608,14 +626,44 @@
                 <tr style="border-bottom:1px solid rgba(255,255,255,0.05);"><td style="padding:8px 0; color:#888;">累計歷史回報率:</td><td style="text-align:right; color:${returnColor}; font-weight:bold;">${totalReturn >= 0 ? '+' : ''}${totalReturn}%</td></tr>
                 <tr><td style="padding:8px 0; color:#888;">策略防禦狀態:</td><td style="text-align:right; color:#fff;">ATR 智能移動追蹤停損運作中</td></tr>
             </table>`;
-        document.getElementById('detailModal').style.display = 'flex';
+            
+        // 觸發顯示動畫
+        document.getElementById('detailModal').classList.add('show');
     }
 
-    function closeModal(id) { document.getElementById(id).style.display = 'none'; }
+    function closeModal(id) { 
+        document.getElementById(id).classList.remove('show'); 
+    }
+
+    // 🌟 彈窗向上滑動關閉邏輯 (Swipe-to-close)
+    const modalBox = document.getElementById('detailModalBox');
+    let mStartY = 0, mCurrentY = 0;
+    
+    modalBox.addEventListener('touchstart', e => { 
+        mStartY = e.touches[0].clientY; 
+    }, {passive: true});
+    
+    modalBox.addEventListener('touchmove', e => {
+        mCurrentY = e.touches[0].clientY;
+        const dy = mCurrentY - mStartY;
+        if (dy < 0) { // 只允許向上拉動
+            e.preventDefault();
+            modalBox.style.transform = `translateY(${dy}px)`;
+        }
+    }, {passive: false});
+    
+    modalBox.addEventListener('touchend', e => {
+        if (mCurrentY !== 0 && mCurrentY - mStartY < -40) { // 滑動超過 40px 關閉
+            closeModal('detailModal');
+        }
+        modalBox.style.transform = ''; // 恢復原位交由 CSS Transition 接管
+        mStartY = 0; mCurrentY = 0;
+    });
+
     function handleEnter(e) { if (e.key === 'Enter') askAI(); }
 
     /* =========================================
-       5. 終端機互動與問答邏輯 (綁定四大宇宙全視角)
+       5. 終端機互動與問答邏輯
        ========================================= */
     async function askAI() {
         const input = document.getElementById('chat-input');
@@ -687,7 +735,7 @@
     }
 
     /* =========================================
-       6. 🌟 智慧防誤觸與側邊欄滑動邏輯 (Swipe Lock)
+       6. 🌟 全域側邊欄滑動邏輯 (已解除防誤觸鎖定)
        ========================================= */
     const sidebarEl = document.getElementById('sidebar');
     const overlayEl = document.getElementById('sidebar-overlay');
@@ -710,13 +758,7 @@
     document.addEventListener('touchstart', (e) => {
         if (window.innerWidth > 768) return; 
 
-        // 🌟 防護鎖：如果在圖表、表格、聊天室或輸入框滑動，禁止拉出選單
-        const ignoreSwipeSelectors = ['canvas', '.records-table-container', '.chat-display', 'input', '.tf-btn'];
-        if (e.target.closest(ignoreSwipeSelectors.join(', '))) {
-            isDraggingMenu = false;
-            return;
-        }
-
+        // 不再封鎖圖表與表格區域，讓全螢幕都能支援滑動
         touchStartX = e.touches[0].clientX;
         touchStartY = e.touches[0].clientY;
         isDraggingMenu = true;
@@ -783,7 +825,7 @@
     });
 
     /* =========================================
-       7. 帳本過濾與本地時間翻譯 (去除非交易紀錄)
+       7. 帳本過濾與本地時間翻譯 (壓縮日期節省手機空間)
        ========================================= */
     let allLedgerRecords = [];
 
@@ -796,7 +838,6 @@
         ];
         
         allLedgerRecords = [];
-        let loadedCount = 0;
         
         for (const u of universes) {
             try {
@@ -805,14 +846,13 @@
                 const text = await response.text();
                 const records = parseCSVLedger(text, u.name);
                 allLedgerRecords = allLedgerRecords.concat(records);
-                loadedCount++;
             } catch (e) {
                 console.warn(`[CSV LOADER] 無法讀取 ${u.name} 異步帳本:`, e);
             }
         }
         
         // 依照時間倒序
-        allLedgerRecords.sort((a, b) => new Date(b.time.replace(' ', 'T') + 'Z') - new Date(a.time.replace(' ', 'T') + 'Z'));
+        allLedgerRecords.sort((a, b) => b.timestamp - a.timestamp);
         renderLedgerTable();
     }
 
@@ -834,28 +874,28 @@
             if (!line) continue;
             const cols = line.split(',');
             
-            // 🌟 智慧過濾：如果動作是 DEPOSIT 或標的為 NONE，直接跳過
             const action = actionIdx !== -1 && cols[actionIdx] ? cols[actionIdx].replace(/"/g, '').trim().toUpperCase() : 'BUY';
             const ticker = tickerIdx !== -1 && cols[tickerIdx] ? cols[tickerIdx].replace(/"/g, '').trim() : '未知';
             if (action === 'DEPOSIT' || ticker === 'NONE') continue; 
             
-            // 🌟 自動時區轉換器：將 CSV 中的 UTC 轉為設備當前時區
             let rawTime = timeIdx !== -1 && cols[timeIdx] ? cols[timeIdx].replace(/"/g, '').trim() : '未知';
+            let timestamp = 0;
+            
             if (rawTime !== '未知') {
                 const utcStr = rawTime.replace(' ', 'T') + ':00Z'; 
                 const d = new Date(utcStr);
                 if (!isNaN(d)) {
-                    const yyyy = d.getFullYear();
+                    timestamp = d.getTime();
                     const mm = String(d.getMonth() + 1).padStart(2, '0');
                     const dd = String(d.getDate()).padStart(2, '0');
                     const hh = String(d.getHours()).padStart(2, '0');
                     const min = String(d.getMinutes()).padStart(2, '0');
-                    rawTime = `${yyyy}-${mm}-${dd} ${hh}:${min}`;
+                    rawTime = `${mm}/${dd} ${hh}:${min}`; // 🌟 短格式時間，節省手機寬度
                 }
             }
             
             records.push({
-                time: rawTime, ticker: ticker, action: action,
+                time: rawTime, timestamp: timestamp, ticker: ticker, action: action,
                 qty: qtyIdx !== -1 && cols[qtyIdx] ? parseInt(cols[qtyIdx].replace(/"/g, '')) : 0,
                 price: priceIdx !== -1 && cols[priceIdx] ? parseFloat(cols[priceIdx].replace(/"/g, '')) : 0.0,
                 universe: universeName
@@ -912,9 +952,7 @@
                     card2.querySelector('div div:nth-child(2) strong').nextSibling.textContent = ` ${(config.DYN_2.risk * 100).toFixed(1)}%`;
                 }
             }
-        } catch (e) {
-            console.log("[GENE OPTIMIZER] 沿用底層系統基因預設值。");
-        }
+        } catch (e) {}
     }
 
     function initSettingsPersistence() {
