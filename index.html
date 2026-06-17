@@ -140,8 +140,8 @@
         th { color: #888; padding: 15px; border-bottom: 1px solid rgba(255,255,255,0.1); position: sticky; top: 0; background: rgba(18,18,18,0.9); backdrop-filter: blur(10px); z-index: 10; }
         td { padding: 15px; color: #ccc; border-bottom: 1px solid rgba(255,255,255,0.03); }
         tr:hover td { background: rgba(255,255,255,0.05); color: #fff; }
-        .badge-buy { background: rgba(0,255,170,0.1); color: #00ffaa; padding: 4px 8px; border-radius: 4px; border: 1px solid rgba(0,255,170,0.3); }
-        .badge-sell { background: rgba(255,69,96,0.1); color: #ff4560; padding: 4px 8px; border-radius: 4px; border: 1px solid rgba(255,69,96,0.3); }
+        .badge-buy { background: rgba(0,255,170,0.1); color: #00ffaa; padding: 4px 8px; border-radius: 4px; border: 1px solid rgba(0,255,170,0.3); display: inline-block; }
+        .badge-sell { background: rgba(255,69,96,0.1); color: #ff4560; padding: 4px 8px; border-radius: 4px; border: 1px solid rgba(255,69,96,0.3); display: inline-block; }
 
         .gene-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; flex: 1; align-content: start; }
         .gene-card { padding: 30px; display: flex; flex-direction: column; gap: 20px; justify-content: center; align-items: center; text-align: center; }
@@ -158,32 +158,27 @@
         input:checked + .slider { background-color: var(--color-dyn1); box-shadow: 0 0 10px var(--color-dyn1); }
         input:checked + .slider:before { transform: translateX(20px); background-color: #000; }
 
-        /* 🌟 頂層下滑式霧化彈窗 (Top Sheet Modal) */
+        /* 🌟 App 級別頂端抽屜彈窗 (Top Sheet) */
         .modal-overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0, 0, 0, 0.3); z-index: 2000;
-            backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px);
-            display: flex; justify-content: center; align-items: flex-start;
-            opacity: 0; visibility: hidden; transition: opacity 0.3s, visibility 0.3s;
+            background: rgba(0, 0, 0, 0.3); z-index: 2000; 
+            backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+            opacity: 0; visibility: hidden; transition: opacity 0.3s ease, visibility 0.3s ease;
+            display: flex; flex-direction: column; align-items: center; justify-content: flex-start;
         }
-        .modal-overlay.show { opacity: 1; visibility: visible; }
-        .modal-box {
-            position: relative; width: 100%; max-width: 600px;
-            background: rgba(15, 15, 15, 0.85);
-            border: 1px solid rgba(255,255,255,0.05); border-top: none;
-            border-radius: 0 0 24px 24px;
-            padding: 25px 25px 15px 25px;
+        .modal-overlay.active { opacity: 1; visibility: visible; pointer-events: auto; }
+        .modal-box { 
+            width: 100%; max-width: 500px; padding: 25px 25px 15px 25px; 
+            background: rgba(18, 18, 18, 0.98);
+            border-bottom: 1px solid rgba(255,255,255,0.08); 
+            border-radius: 0 0 28px 28px; 
+            display: flex; flex-direction: column; gap: 15px; 
+            transform: translateY(-100%); transition: transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
             box-shadow: 0 15px 40px rgba(0,0,0,0.6);
-            transform: translateY(-100%);
-            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
-        .modal-overlay.show .modal-box { transform: translateY(0); }
-        
-        .swipe-handle {
-            width: 45px; height: 5px; border-radius: 3px;
-            background: rgba(255,255,255,0.25); margin: 20px auto 0; cursor: pointer;
-        }
+        .modal-overlay.active .modal-box { transform: translateY(0); }
         .modal-title { font-size: 16px; font-weight: bold; border-bottom: 1px solid rgba(255,255,255,0.06); padding-bottom: 10px; color: #fff; }
+        .drag-handle { width: 40px; height: 5px; background: rgba(255,255,255,0.15); border-radius: 5px; margin: 5px auto 0 auto; cursor: grab; }
 
         /* =========================================
            📱 手機版專屬樣式 (Mobile Responsive)
@@ -229,15 +224,32 @@
             .chat-input-area input { flex: 1; margin-bottom: 0; padding: 10px 12px; }
             .send-btn { width: 75px; padding: 0; font-size: 11px; flex-shrink: 0; }
             
-            .gene-grid { grid-template-columns: 1fr; }
+            /* 🌟 極致壓縮的手機版表格，徹底消滅橫向捲動 */
+            .records-table-container { 
+                padding: 10px; 
+                overflow-x: hidden !important; 
+            }
+            table { 
+                font-size: 11px; 
+                table-layout: fixed; 
+                width: 100%; 
+            }
+            th, td { 
+                padding: 10px 2px; 
+                text-align: center; 
+                word-wrap: break-word; 
+            }
+            /* 自訂欄位比例 */
+            th:nth-child(1) { width: 28%; } /* 雙行時間 */
+            th:nth-child(2) { width: 18%; } /* 標的 */
+            th:nth-child(3) { width: 16%; } /* 動作 */
+            th:nth-child(4) { width: 14%; } /* 股數 */
+            th:nth-child(5) { width: 14%; } /* 價格 */
+            th:nth-child(6) { width: 10%; } /* 宇宙 */
             
-            /* 🌟 手機版完美表格壓縮 (無橫向捲軸) */
-            .records-table-container { padding: 10px 5px; overflow-x: hidden; }
-            table { font-size: 11px; table-layout: auto; width: 100%; }
-            th, td { padding: 10px 2px; text-align: center; }
-            th:nth-child(1), td:nth-child(1) { text-align: left; padding-left: 5px; } /* 時間靠左 */
-            th:nth-child(6), td:nth-child(6) { text-align: right; padding-right: 5px; } /* 宇宙靠右 */
-            .badge-buy, .badge-sell { padding: 3px 5px; font-size: 9px; }
+            .badge-buy, .badge-sell { padding: 2px 4px; font-size: 9px; }
+            
+            .gene-grid { grid-template-columns: 1fr; }
         }
     </style>
 </head>
@@ -321,7 +333,7 @@
         <h2 style="margin: 0; font-size: 18px; letter-spacing: 2px;"><i class="fa-solid fa-list-ul"></i> 近期交易紀錄</h2>
         <div class="glass-panel records-table-container">
             <table>
-                <thead><tr><th>時間</th><th>標的</th><th>動作</th><th>股數</th><th>價格</th><th>宇宙</th></tr></thead>
+                <thead><tr><th>本地時間</th><th>標的</th><th>動作</th><th>股數</th><th>價格</th><th>宇宙</th></tr></thead>
                 <tbody>
                     </tbody>
             </table>
@@ -381,10 +393,11 @@
 </div>
 
 <div class="modal-overlay" id="detailModal" onclick="closeModal('detailModal')">
-    <div class="glass-panel modal-box" id="detailModalBox" onclick="event.stopPropagation()">
+    <div class="modal-box" onclick="event.stopPropagation()">
         <div class="modal-title" id="detail-title">宇宙詳情</div>
         <div style="color: #bbb; font-size: 13px; line-height: 1.8;" id="detail-content"></div>
-        <div class="swipe-handle"></div> </div>
+        <div class="drag-handle"></div>
+    </div>
 </div>
 
 <script>
@@ -417,8 +430,10 @@
             chartTimestamps.push(Date.now());
             return label;
         });
-        d1 = NAV_HISTORY.DYN_1; d2 = NAV_HISTORY.DYN_2; 
-        s1 = NAV_HISTORY.STA_1; s2 = NAV_HISTORY.STA_2;
+        d1 = NAV_HISTORY.DYN_1;
+        d2 = NAV_HISTORY.DYN_2; 
+        s1 = NAV_HISTORY.STA_1; 
+        s2 = NAV_HISTORY.STA_2;
     }
 
     document.getElementById('val-dyn1').innerText = "$ " + d1[d1.length - 1].toLocaleString(undefined, {minimumFractionDigits:1, maximumFractionDigits:1});
@@ -426,7 +441,7 @@
     document.getElementById('val-sta1').innerText = "$ " + s1[s1.length - 1].toLocaleString(undefined, {minimumFractionDigits:1, maximumFractionDigits:1});
     document.getElementById('val-sta2').innerText = "$ " + s2[s2.length - 1].toLocaleString(undefined, {minimumFractionDigits:1, maximumFractionDigits:1});
 
-    // 🌟 真實時間軸過濾邏輯
+    // 🌟 真實時間軸過濾邏輯：透過毫秒嚴格往前切換
     function updateChartTimeframe(tf) {
         currentGlobalTimeframe = tf || currentGlobalTimeframe;
         if (typeof NAV_HISTORY === 'undefined' || !NAV_HISTORY.labels) return;
@@ -585,16 +600,6 @@
         }
     });
 
-    // 🌟 手機版圖表提示框：放開手指立即消失，不留殘影
-    canvasEl.addEventListener('touchend', () => {
-        if (window.innerWidth <= 768) {
-            setTimeout(() => {
-                mainChart.tooltip.setActiveElements([], {x:0, y:0});
-                mainChart.update();
-            }, 50); // 延遲確保 onClick 依然能觸發彈窗
-        }
-    });
-
     function changeTimeframe(btn, tf) {
         document.querySelectorAll('.tf-btn').forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
@@ -626,44 +631,19 @@
                 <tr style="border-bottom:1px solid rgba(255,255,255,0.05);"><td style="padding:8px 0; color:#888;">累計歷史回報率:</td><td style="text-align:right; color:${returnColor}; font-weight:bold;">${totalReturn >= 0 ? '+' : ''}${totalReturn}%</td></tr>
                 <tr><td style="padding:8px 0; color:#888;">策略防禦狀態:</td><td style="text-align:right; color:#fff;">ATR 智能移動追蹤停損運作中</td></tr>
             </table>`;
-            
-        // 觸發顯示動畫
-        document.getElementById('detailModal').classList.add('show');
+        
+        const modal = document.getElementById('detailModal');
+        modal.classList.add('active');
     }
 
     function closeModal(id) { 
-        document.getElementById(id).classList.remove('show'); 
+        document.getElementById(id).classList.remove('active'); 
     }
-
-    // 🌟 彈窗向上滑動關閉邏輯 (Swipe-to-close)
-    const modalBox = document.getElementById('detailModalBox');
-    let mStartY = 0, mCurrentY = 0;
     
-    modalBox.addEventListener('touchstart', e => { 
-        mStartY = e.touches[0].clientY; 
-    }, {passive: true});
-    
-    modalBox.addEventListener('touchmove', e => {
-        mCurrentY = e.touches[0].clientY;
-        const dy = mCurrentY - mStartY;
-        if (dy < 0) { // 只允許向上拉動
-            e.preventDefault();
-            modalBox.style.transform = `translateY(${dy}px)`;
-        }
-    }, {passive: false});
-    
-    modalBox.addEventListener('touchend', e => {
-        if (mCurrentY !== 0 && mCurrentY - mStartY < -40) { // 滑動超過 40px 關閉
-            closeModal('detailModal');
-        }
-        modalBox.style.transform = ''; // 恢復原位交由 CSS Transition 接管
-        mStartY = 0; mCurrentY = 0;
-    });
-
     function handleEnter(e) { if (e.key === 'Enter') askAI(); }
 
     /* =========================================
-       5. 終端機互動與問答邏輯
+       5. 終端機互動與問答邏輯 
        ========================================= */
     async function askAI() {
         const input = document.getElementById('chat-input');
@@ -735,30 +715,22 @@
     }
 
     /* =========================================
-       6. 🌟 全域側邊欄滑動邏輯 (已解除防誤觸鎖定)
+       6. 🌟 手機版側邊欄與視窗防誤觸 (Swipe Lock)
        ========================================= */
-    const sidebarEl = document.getElementById('sidebar');
     const overlayEl = document.getElementById('sidebar-overlay');
     let touchStartX = 0; let touchStartY = 0; 
     let touchCurrentX = 0; let isDraggingMenu = false; let isDetermined = false;
-    
-    const SIDEBAR_WIDTH = 260; 
-    const SWIPE_THRESHOLD = SIDEBAR_WIDTH * 0.25; 
-
-    function toggleSidebar() {
-        const isOpen = sidebarEl.classList.contains('open');
-        if (isOpen) {
-            sidebarEl.classList.remove('open'); overlayEl.classList.remove('active');
-        } else {
-            sidebarEl.classList.add('open'); overlayEl.classList.add('active');
-        }
-        sidebarEl.style.transform = ''; 
-    }
 
     document.addEventListener('touchstart', (e) => {
         if (window.innerWidth > 768) return; 
 
-        // 不再封鎖圖表與表格區域，讓全螢幕都能支援滑動
+        // 🌟 核心防護鎖：只要手滑過這些功能區塊，側邊欄絕對鎖死禁止拉出
+        const ignoreSwipeSelectors = ['canvas', '.records-table-container', '.chat-display', 'input', '.tf-btn', '.modal-box'];
+        if (e.target.closest(ignoreSwipeSelectors.join(', '))) {
+            isDraggingMenu = false;
+            return;
+        }
+
         touchStartX = e.touches[0].clientX;
         touchStartY = e.touches[0].clientY;
         isDraggingMenu = true;
@@ -790,12 +762,12 @@
         if (!isOpen && diffX > 0) {
             if (e.cancelable) e.preventDefault(); 
             sidebarEl.classList.add('dragging');
-            const moveX = Math.min(diffX - SIDEBAR_WIDTH, 0); 
+            const moveX = Math.min(diffX - 260, 0); 
             sidebarEl.style.transform = `translateX(${moveX}px)`;
         } else if (isOpen && diffX < 0) {
             if (e.cancelable) e.preventDefault();
             sidebarEl.classList.add('dragging');
-            const moveX = Math.max(diffX, -SIDEBAR_WIDTH);
+            const moveX = Math.max(diffX, -260);
             sidebarEl.style.transform = `translateX(${moveX}px)`;
         }
     }, {passive: false});
@@ -811,11 +783,11 @@
 
         if (touchCurrentX !== 0) {
             if (!isOpen && diffX > 0) {
-                if (diffX > SWIPE_THRESHOLD) {
+                if (diffX > 65) {
                     sidebarEl.classList.add('open'); overlayEl.classList.add('active');
                 }
             } else if (isOpen && diffX < 0) {
-                if (absDiff > SWIPE_THRESHOLD) {
+                if (absDiff > 65) {
                     sidebarEl.classList.remove('open'); overlayEl.classList.remove('active');
                 }
             }
@@ -825,7 +797,49 @@
     });
 
     /* =========================================
-       7. 帳本過濾與本地時間翻譯 (壓縮日期節省手機空間)
+       7. 🌟 Top Sheet 彈窗拖曳跟手邏輯 (滑動關閉)
+       ========================================= */
+    const modalBox = document.querySelector('.modal-box');
+    let mTouchStartY = 0; let mTouchCurrentY = 0; let isDraggingModal = false;
+
+    modalBox.addEventListener('touchstart', (e) => {
+        mTouchStartY = e.touches[0].clientY;
+        isDraggingModal = true;
+        modalBox.style.transition = 'none'; // 取消動畫，實現 1:1 跟手
+    }, {passive: true});
+
+    modalBox.addEventListener('touchmove', (e) => {
+        if (!isDraggingModal) return;
+        mTouchCurrentY = e.touches[0].clientY;
+        const diffY = mTouchCurrentY - mTouchStartY;
+
+        if (diffY < 0) {
+            // 允許往上推
+            if (e.cancelable) e.preventDefault();
+            modalBox.style.transform = `translateY(${diffY}px)`;
+        } else {
+            // 往下推給予阻力
+            modalBox.style.transform = `translateY(${diffY * 0.2}px)`;
+        }
+    }, {passive: false});
+
+    modalBox.addEventListener('touchend', (e) => {
+        if (!isDraggingModal) return;
+        isDraggingModal = false;
+        modalBox.style.transition = 'transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1)';
+
+        const diffY = mTouchCurrentY !== 0 ? mTouchCurrentY - mTouchStartY : 0;
+        if (diffY < -40) { // 向上推超過 40px 自動收起
+            closeModal('detailModal');
+            setTimeout(() => { modalBox.style.transform = ''; }, 300);
+        } else {
+            modalBox.style.transform = ''; // 彈回原位
+        }
+        mTouchStartY = 0; mTouchCurrentY = 0;
+    });
+
+    /* =========================================
+       8. 帳本過濾與本地時間翻譯 
        ========================================= */
     let allLedgerRecords = [];
 
@@ -836,7 +850,6 @@
             { name: 'STA_1', path: 'data/ledger_sta_1_agg.csv' },
             { name: 'STA_2', path: 'data/ledger_sta_2_con.csv' }
         ];
-        
         allLedgerRecords = [];
         
         for (const u of universes) {
@@ -850,23 +863,20 @@
                 console.warn(`[CSV LOADER] 無法讀取 ${u.name} 異步帳本:`, e);
             }
         }
-        
-        // 依照時間倒序
-        allLedgerRecords.sort((a, b) => b.timestamp - a.timestamp);
+        allLedgerRecords.sort((a, b) => new Date(b.rawUtc) - new Date(a.rawUtc));
         renderLedgerTable();
     }
 
     function parseCSVLedger(text, universeName) {
         const lines = text.split('\n');
         if (lines.length <= 1) return [];
-        
         const headers = lines[0].split(',').map(h => h.trim().toLowerCase());
         const records = [];
         
         const timeIdx = headers.findIndex(h => h.includes('time') || h.includes('時間') || h.includes('date'));
         const tickerIdx = headers.findIndex(h => h.includes('ticker') || h.includes('標的') || h.includes('symbol'));
-        const actionIdx = headers.findIndex(h => h.includes('action') || h.includes('動作') || h.includes('type') || h.includes('side'));
-        const qtyIdx = headers.findIndex(h => h.includes('qty') || h.includes('股數') || h.includes('quantity'));
+        const actionIdx = headers.findIndex(h => h.includes('action') || h.includes('動作') || h.includes('type'));
+        const qtyIdx = headers.findIndex(h => h.includes('qty') || h.includes('股數'));
         const priceIdx = headers.findIndex(h => h.includes('price') || h.includes('價格'));
         
         for (let i = 1; i < lines.length; i++) {
@@ -879,23 +889,26 @@
             if (action === 'DEPOSIT' || ticker === 'NONE') continue; 
             
             let rawTime = timeIdx !== -1 && cols[timeIdx] ? cols[timeIdx].replace(/"/g, '').trim() : '未知';
-            let timestamp = 0;
-            
+            let displayTime = rawTime;
+            let rawUtcDate = new Date();
+
             if (rawTime !== '未知') {
                 const utcStr = rawTime.replace(' ', 'T') + ':00Z'; 
                 const d = new Date(utcStr);
                 if (!isNaN(d)) {
-                    timestamp = d.getTime();
+                    rawUtcDate = d;
+                    const yyyy = d.getFullYear();
                     const mm = String(d.getMonth() + 1).padStart(2, '0');
                     const dd = String(d.getDate()).padStart(2, '0');
                     const hh = String(d.getHours()).padStart(2, '0');
                     const min = String(d.getMinutes()).padStart(2, '0');
-                    rawTime = `${mm}/${dd} ${hh}:${min}`; // 🌟 短格式時間，節省手機寬度
+                    // 🌟 智慧換行結構：為手機版準備的切割點
+                    displayTime = `${yyyy}-${mm}-${dd} ${hh}:${min}`;
                 }
             }
             
             records.push({
-                time: rawTime, timestamp: timestamp, ticker: ticker, action: action,
+                time: displayTime, rawUtc: rawUtcDate, ticker: ticker, action: action,
                 qty: qtyIdx !== -1 && cols[qtyIdx] ? parseInt(cols[qtyIdx].replace(/"/g, '')) : 0,
                 price: priceIdx !== -1 && cols[priceIdx] ? parseFloat(cols[priceIdx].replace(/"/g, '')) : 0.0,
                 universe: universeName
@@ -914,17 +927,31 @@
             return;
         }
         
+        const isMobile = window.innerWidth <= 768;
+
         tbody.innerHTML = filtered.map(r => {
             const isBuy = r.action.includes('BUY');
             const badgeClass = isBuy ? 'badge-buy' : 'badge-sell';
+            
+            // 🌟 手機版將日期與時間拆成兩行，拯救橫向空間
+            let timeHtml = r.time;
+            if (isMobile) {
+                const tParts = r.time.split(' ');
+                if(tParts.length === 2) {
+                    timeHtml = `${tParts[0]}<br><span style="font-size:0.85em; color:#888;">${tParts[1]}</span>`;
+                }
+            }
+            
+            const uniText = isMobile ? r.universe.replace('DYN_', 'D').replace('STA_', 'S') : r.universe;
+
             return `
                 <tr>
-                    <td>${r.time}</td>
-                    <td>${r.ticker}</td>
+                    <td style="line-height:1.3;">${timeHtml}</td>
+                    <td style="font-weight:bold; letter-spacing:0.5px;">${r.ticker}</td>
                     <td><span class="${badgeClass}">${r.action}</span></td>
                     <td>${r.qty.toLocaleString()}</td>
                     <td>${r.price.toFixed(1)}</td>
-                    <td style="color: ${U_COLORS[r.universe]}; font-weight:bold;">${r.universe}</td>
+                    <td style="color: ${U_COLORS[r.universe]}; font-weight:bold;">${uniText}</td>
                 </tr>
             `;
         }).join('');
@@ -952,7 +979,9 @@
                     card2.querySelector('div div:nth-child(2) strong').nextSibling.textContent = ` ${(config.DYN_2.risk * 100).toFixed(1)}%`;
                 }
             }
-        } catch (e) {}
+        } catch (e) {
+            console.log("[GENE OPTIMIZER] 沿用底層系統基因預設值。");
+        }
     }
 
     function initSettingsPersistence() {
