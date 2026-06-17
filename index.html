@@ -158,10 +158,12 @@
         input:checked + .slider { background-color: var(--color-dyn1); box-shadow: 0 0 10px var(--color-dyn1); }
         input:checked + .slider:before { transform: translateX(20px); background-color: #000; }
 
+        /* 🌟 高質感霧化毛玻璃彈窗 */
         .modal-overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.75); z-index: 2000; display: none;
-            backdrop-filter: blur(12px); justify-content: center; align-items: center;
+            background: rgba(0, 0, 0, 0.3); z-index: 2000; display: none;
+            backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px);
+            justify-content: center; align-items: center;
         }
         .modal-box { width: 500px; padding: 25px; display: flex; flex-direction: column; gap: 15px; }
         .modal-title { font-size: 16px; font-weight: bold; border-bottom: 1px solid rgba(255,255,255,0.06); padding-bottom: 10px; color: #fff; }
@@ -231,7 +233,9 @@
 <div id="content-area">
     <div id="mobile-header">
         <button class="mobile-menu-btn" onclick="toggleSidebar()"><i class="fa-solid fa-bars"></i></button>
-        <div style="font-weight: 900; letter-spacing: 3px; font-size: 16px; color: #fff;"><i class="fa-brands fa-connectdevelop"></i> 4D MATRIX</div>
+        <div style="font-weight: 900; letter-spacing: 3px; font-size: 16px; color: #fff; cursor: pointer;" onclick="switchView('view-dashboard', document.querySelectorAll('.menu-item')[0])">
+            <i class="fa-brands fa-connectdevelop"></i> 4D MATRIX
+        </div>
         <div style="width: 30px;"></div>
     </div>
 
@@ -363,23 +367,25 @@
 
 <script>
     /* =========================================
-       0. 數據橋接核心與時間軸在地化
+       0. 數據橋接核心與真實時間戳記轉化
        ========================================= */
     let chartLabels = ['等待啟動'];
+    let chartTimestamps = []; // 儲存真實毫秒時間戳
     let d1 = [100000], d2 = [100000], s1 = [100000], s2 = [100000];
     let currentGlobalTimeframe = '1D';
 
-    // 🌟 圖表時間軸自動在地化 (UTC 轉 Local) 
     if (typeof NAV_HISTORY !== 'undefined') {
         const currentYear = new Date().getFullYear();
+        chartTimestamps = [];
+        
+        // 將 UTC 轉為本地時間，並記錄真實時間戳供 1D/1W 過濾使用
         chartLabels = NAV_HISTORY.labels.map(label => {
             const parts = label.split(' ');
             if(parts.length === 2) {
-                // 將 "MM/DD HH:mm" 補齊年份並加上 Z 視為 UTC 時間
                 const utcStr = `${currentYear}-${parts[0].replace('/', '-')}T${parts[1]}:00Z`;
                 const d = new Date(utcStr);
                 if(!isNaN(d)) {
-                    // 翻譯為本地時間
+                    chartTimestamps.push(d.getTime());
                     const mm = String(d.getMonth() + 1).padStart(2, '0');
                     const dd = String(d.getDate()).padStart(2, '0');
                     const hh = String(d.getHours()).padStart(2, '0');
@@ -387,6 +393,7 @@
                     return `${mm}/${dd} ${hh}:${min}`;
                 }
             }
+            chartTimestamps.push(Date.now());
             return label;
         });
         d1 = NAV_HISTORY.DYN_1;
@@ -400,6 +407,7 @@
     document.getElementById('val-sta1').innerText = "$ " + s1[s1.length - 1].toLocaleString(undefined, {minimumFractionDigits:1, maximumFractionDigits:1});
     document.getElementById('val-sta2').innerText = "$ " + s2[s2.length - 1].toLocaleString(undefined, {minimumFractionDigits:1, maximumFractionDigits:1});
 
+    // 🌟 真實時間軸過濾邏輯：透過毫秒嚴格往前切換 24 小時、7 天等
     function updateChartTimeframe(tf) {
         currentGlobalTimeframe = tf || currentGlobalTimeframe;
         if (typeof NAV_HISTORY === 'undefined' || !NAV_HISTORY.labels) return;
@@ -408,12 +416,24 @@
         if (totalPoints === 0) return;
         
         let startIndex = 0;
-        if (currentGlobalTimeframe !== '1Y') {
+        
+        if (chartTimestamps.length === totalPoints && currentGlobalTimeframe !== '1Y') {
+            const latestTime = chartTimestamps[totalPoints - 1]; // 取最後一筆的時間
+            let msLimit = Infinity;
             switch(currentGlobalTimeframe) {
-                case '1D': startIndex = Math.max(0, totalPoints - 12); break;
-                case '1W': startIndex = Math.max(0, totalPoints - 48); break;
-                case '1M': startIndex = Math.max(0, totalPoints - 160); break;
-                case '3M': startIndex = Math.max(0, totalPoints - 450); break;
+                case '1D': msLimit = 24 * 60 * 60 * 1000; break;
+                case '1W': msLimit = 7 * 24 * 60 * 60 * 1000; break;
+                case '1M': msLimit = 30 * 24 * 60 * 60 * 1000; break;
+                case '3M': msLimit = 90 * 24 * 60 * 60 * 1000; break;
+            }
+            
+            if (msLimit !== Infinity) {
+                for (let i = 0; i < totalPoints; i++) {
+                    if (latestTime - chartTimestamps[i] <= msLimit) {
+                        startIndex = i;
+                        break;
+                    }
+                }
             }
         }
         
@@ -426,7 +446,7 @@
     }
 
     /* =========================================
-       1. 游標高光追蹤 (電腦版限定效果)
+       1. 游標高光追蹤
        ========================================= */
     document.addEventListener('mousemove', e => {
         document.querySelectorAll('.glass-panel, .glass-title-text').forEach(el => {
@@ -448,10 +468,7 @@
         if (window.innerWidth <= 768 && sidebarEl.classList.contains('open')) {
             toggleSidebar();
         }
-
-        if (viewId === 'view-records') {
-            renderLedgerTable();
-        }
+        if (viewId === 'view-records') renderLedgerTable();
     }
 
     /* =========================================
@@ -462,12 +479,10 @@
 
     function handleCardClick(universe, event) {
         const isMobile = window.innerWidth <= 768;
-
         if (isMobile || event.ctrlKey || event.metaKey) {
             if (selectedUniverses.length === 4) {
                 selectedUniverses = [universe];
-            } 
-            else if (selectedUniverses.includes(universe)) {
+            } else if (selectedUniverses.includes(universe)) {
                 selectedUniverses = selectedUniverses.filter(u => u !== universe);
                 if (selectedUniverses.length === 0) selectedUniverses = Object.keys(U_COLORS);
             } else {
@@ -530,7 +545,8 @@
         ]
     };
 
-    const mainChart = new Chart(document.getElementById('mainChart').getContext('2d'), {
+    const canvasEl = document.getElementById('mainChart');
+    const mainChart = new Chart(canvasEl.getContext('2d'), {
         type: 'line', data: chartData,
         options: {
             responsive: true, maintainAspectRatio: false,
@@ -538,12 +554,7 @@
             plugins: { legend: { display: false }, tooltip: { backgroundColor: 'rgba(0,0,0,0.8)', titleColor: '#fff', padding: 12 } },
             scales: {
                 y: { grid: { color: 'rgba(255,255,255,0.03)' }, ticks: { color: '#666' } },
-                x: { 
-                    grid: { display: false }, 
-                    ticks: { 
-                        color: '#666', maxRotation: 0, autoSkip: true, maxTicksLimit: 5, font: { size: 10 }
-                    } 
-                }
+                x: { grid: { display: false }, ticks: { color: '#666', maxRotation: 0, autoSkip: true, maxTicksLimit: 5, font: { size: 10 } } }
             },
             onClick: (e, elements) => {
                 const activePoints = mainChart.getElementsAtEventForMode(e, 'nearest', { intersect: true }, false);
@@ -552,6 +563,17 @@
                     showUniverseDetail(ds.label, ds.borderColor);
                 }
             }
+        }
+    });
+
+    // 🌟 手機版圖表提示框修改：放開手指立即消失
+    canvasEl.addEventListener('touchend', () => {
+        if (window.innerWidth <= 768) {
+            // 延遲 50ms 確保 onClick 能正常觸發叫出彈窗
+            setTimeout(() => {
+                mainChart.tooltip.setActiveElements([], {x:0, y:0});
+                mainChart.update();
+            }, 50);
         }
     });
 
@@ -568,9 +590,7 @@
         if (label.includes('STA_2') || label.includes('靜態穩健')) key = 'STA_2';
         
         let arr = [100000];
-        if (typeof NAV_HISTORY !== 'undefined' && NAV_HISTORY[key]) {
-            arr = NAV_HISTORY[key];
-        }
+        if (typeof NAV_HISTORY !== 'undefined' && NAV_HISTORY[key]) arr = NAV_HISTORY[key];
         
         const latest = arr[arr.length - 1];
         const initial = arr[0];
@@ -595,7 +615,7 @@
     function handleEnter(e) { if (e.key === 'Enter') askAI(); }
 
     /* =========================================
-       5. 終端機互動與問答邏輯 (🌟已綁定四大宇宙全視角)
+       5. 終端機互動與問答邏輯 (綁定四大宇宙全視角)
        ========================================= */
     async function askAI() {
         const input = document.getElementById('chat-input');
@@ -604,7 +624,6 @@
         if (!userMsg) return;
 
         let HARDCODED_API_KEY = localStorage.getItem('MY_GEMINI_KEY');
-
         if (!HARDCODED_API_KEY) {
             HARDCODED_API_KEY = prompt("請輸入你的 Gemini API 金鑰 (只需輸入一次，會儲存在本機瀏覽器)：");
             if (HARDCODED_API_KEY) {
@@ -624,8 +643,6 @@
         output.scrollTop = output.scrollHeight;
 
         const currentU = selectedUniverses.length > 0 ? selectedUniverses.join(', ') : '待機模式';
-        
-        // 抓取四大宇宙的最新淨值
         const currentD1 = typeof d1 !== 'undefined' ? d1[d1.length - 1] : 0;
         const currentD2 = typeof d2 !== 'undefined' ? d2[d2.length - 1] : 0;
         const currentS1 = typeof s1 !== 'undefined' ? s1[s1.length - 1] : 0;
@@ -670,7 +687,7 @@
     }
 
     /* =========================================
-       6. 手機版滑動與選單控制邏輯
+       6. 🌟 智慧防誤觸與側邊欄滑動邏輯 (Swipe Lock)
        ========================================= */
     const sidebarEl = document.getElementById('sidebar');
     const overlayEl = document.getElementById('sidebar-overlay');
@@ -692,6 +709,14 @@
 
     document.addEventListener('touchstart', (e) => {
         if (window.innerWidth > 768) return; 
+
+        // 🌟 防護鎖：如果在圖表、表格、聊天室或輸入框滑動，禁止拉出選單
+        const ignoreSwipeSelectors = ['canvas', '.records-table-container', '.chat-display', 'input', '.tf-btn'];
+        if (e.target.closest(ignoreSwipeSelectors.join(', '))) {
+            isDraggingMenu = false;
+            return;
+        }
+
         touchStartX = e.touches[0].clientX;
         touchStartY = e.touches[0].clientY;
         isDraggingMenu = true;
@@ -753,13 +778,12 @@
                 }
             }
         }
-        
         sidebarEl.style.transform = ''; 
         touchStartX = 0; touchStartY = 0; touchCurrentX = 0;
     });
 
     /* =========================================
-       7. 🌟 帳本動態翻譯與過濾 (去除非交易紀錄 + 本地時間轉換)
+       7. 帳本過濾與本地時間翻譯 (去除非交易紀錄)
        ========================================= */
     let allLedgerRecords = [];
 
@@ -787,18 +811,9 @@
             }
         }
         
-        // 依照時間戳記由新到舊排序
+        // 依照時間倒序
         allLedgerRecords.sort((a, b) => new Date(b.time.replace(' ', 'T') + 'Z') - new Date(a.time.replace(' ', 'T') + 'Z'));
         renderLedgerTable();
-        
-        const output = document.getElementById('chat-output');
-        if (loadedCount > 0 && output) {
-            output.innerHTML += `<br><span style="color: #00ffaa;">[SYSTEM]</span> 成功同步 ${loadedCount} 個矩陣核心帳本，共擷取 ${allLedgerRecords.length} 筆有效實彈交易。`;
-            output.scrollTop = output.scrollHeight;
-        } else if (window.location.protocol === 'file:' && output) {
-            output.innerHTML += `<br><span style="color: #feb019;">[SYSTEM] 提示: 偵測到本地 file:// 協議限制。為使非同步 CSV 數據流生效，請推送到 GitHub Pages 或啟動本地 Local Server 測試。</span>`;
-            output.scrollTop = output.scrollHeight;
-        }
     }
 
     function parseCSVLedger(text, universeName) {
@@ -819,15 +834,15 @@
             if (!line) continue;
             const cols = line.split(',');
             
-            // 🌟 過濾器：如果動作是 DEPOSIT (入金) 或是 標的為 NONE，直接跳過不顯示
+            // 🌟 智慧過濾：如果動作是 DEPOSIT 或標的為 NONE，直接跳過
             const action = actionIdx !== -1 && cols[actionIdx] ? cols[actionIdx].replace(/"/g, '').trim().toUpperCase() : 'BUY';
             const ticker = tickerIdx !== -1 && cols[tickerIdx] ? cols[tickerIdx].replace(/"/g, '').trim() : '未知';
             if (action === 'DEPOSIT' || ticker === 'NONE') continue; 
             
-            // 🌟 時間在地化：將 CSV 裡面的 UTC 時間轉換為你的本地時間
+            // 🌟 自動時區轉換器：將 CSV 中的 UTC 轉為設備當前時區
             let rawTime = timeIdx !== -1 && cols[timeIdx] ? cols[timeIdx].replace(/"/g, '').trim() : '未知';
             if (rawTime !== '未知') {
-                const utcStr = rawTime.replace(' ', 'T') + ':00Z'; // 假設後端時間為 YYYY-MM-DD HH:mm，強制加上 Z 當作 UTC
+                const utcStr = rawTime.replace(' ', 'T') + ':00Z'; 
                 const d = new Date(utcStr);
                 if (!isNaN(d)) {
                     const yyyy = d.getFullYear();
@@ -840,9 +855,7 @@
             }
             
             records.push({
-                time: rawTime,
-                ticker: ticker,
-                action: action,
+                time: rawTime, ticker: ticker, action: action,
                 qty: qtyIdx !== -1 && cols[qtyIdx] ? parseInt(cols[qtyIdx].replace(/"/g, '')) : 0,
                 price: priceIdx !== -1 && cols[priceIdx] ? parseFloat(cols[priceIdx].replace(/"/g, '')) : 0.0,
                 universe: universeName
@@ -856,9 +869,8 @@
         if (!tbody) return;
         
         const filtered = allLedgerRecords.filter(r => selectedUniverses.includes(r.universe));
-        
         if (filtered.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; color:#555; padding:40px; font-size:12px;">聚焦宇宙當前尚無真實交易事件</td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; color:#555; padding:40px; font-size:12px;">聚焦宇宙當前尚無實質交易事件</td></tr>`;
             return;
         }
         
@@ -901,7 +913,7 @@
                 }
             }
         } catch (e) {
-            console.log("[GENE OPTIMIZER] 未發現動態權重覆蓋檔，沿用底層系統基因預設值。");
+            console.log("[GENE OPTIMIZER] 沿用底層系統基因預設值。");
         }
     }
 
@@ -910,27 +922,16 @@
         switches.forEach((sw, idx) => {
             const storageKey = `CORE_SETTING_VAL_${idx}`;
             const savedState = localStorage.getItem(storageKey);
-            if (savedState !== null) {
-                sw.checked = savedState === 'true';
-            }
-            sw.addEventListener('change', () => {
-                localStorage.setItem(storageKey, sw.checked);
-                const output = document.getElementById('chat-output');
-                if (output) {
-                    const settingName = sw.parentElement.parentElement.querySelector('div div').innerText;
-                    output.innerHTML += `<br><span style="color: rgba(255,255,255,0.4);">[SYSTEM]</span> 控制核心變更: 「${settingName}」已切換為 [${sw.checked ? 'ENABLED' : 'DISABLED'}]`;
-                    output.scrollTop = output.scrollHeight;
-                }
-            });
+            if (savedState !== null) sw.checked = savedState === 'true';
+            sw.addEventListener('change', () => localStorage.setItem(storageKey, sw.checked));
         });
     }
 
-    // 系統初始化序列啟動
     initSettingsPersistence();
     loadAllLedgers();
     loadDynamicGenes();
     updateUIState();
-    updateChartTimeframe('1D'); // 初始化為 1D 區間
+    updateChartTimeframe('1D');
 </script>
 </body>
 </html>
