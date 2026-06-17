@@ -39,11 +39,11 @@
         ::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.15); border-radius: 10px; }
         ::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.3); }
 
-        /* 嚴格鎖定 body 與 html，禁止 iOS 橡皮筋回彈與整體網頁捲動 */
+        /* 使用 100dvh 解決 iOS 底部裁切問題 */
         html, body {
             background: var(--bg-gradient); color: var(--text-main);
             font-family: "Inter", "Microsoft JhengHei", sans-serif;
-            margin: 0; padding: 0; height: 100vh; width: 100vw;
+            margin: 0; padding: 0; height: 100dvh; width: 100vw;
             overflow: hidden; overscroll-behavior: none;
             display: flex;
         }
@@ -75,6 +75,7 @@
             width: 260px; border-right: 1px solid var(--border-color);
             display: flex; flex-direction: column; padding: 20px;
             background: rgba(5, 5, 5, 0.4); z-index: 1000; flex-shrink: 0;
+            height: 100dvh;
         }
         .menu-item {
             padding: 14px 18px; margin-bottom: 8px; border-radius: 6px; cursor: pointer;
@@ -83,7 +84,7 @@
         .menu-item:hover, .menu-item.active { background: rgba(255, 255, 255, 0.03); color: #fff; }
         .menu-item i { width: 16px; font-size: 14px; }
 
-        #content-area { flex: 1; position: relative; height: 100vh; overflow: hidden; }
+        #content-area { flex: 1; position: relative; height: 100dvh; overflow: hidden; }
         .view-section {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
             padding: 20px; display: flex; flex-direction: column; gap: 15px;
@@ -188,7 +189,7 @@
                 z-index: 900; backdrop-filter: blur(2px);
             }
             #sidebar {
-                position: fixed; left: 0; top: 0; bottom: 0; height: 100vh;
+                position: fixed; left: 0; top: 0; bottom: 0; height: 100dvh;
                 transform: translateX(-100%); transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
                 box-shadow: 5px 0 20px rgba(0,0,0,0.5); background: rgba(10, 10, 10, 0.95); backdrop-filter: blur(20px);
             }
@@ -196,8 +197,10 @@
             #sidebar.dragging { transition: none; }
             
             .view-section {
-                top: 60px; height: calc(100% - 60px); 
+                top: 60px; height: calc(100dvh - 60px); 
                 padding: 15px; 
+                /* 加入安全邊距防止 iOS 底部橫條遮擋 */
+                padding-bottom: max(15px, env(safe-area-inset-bottom));
             }
             .stat-grid { grid-template-columns: repeat(2, 1fr); height: auto; margin-bottom: 5px; }
             .stat-card { padding: 12px; }
@@ -415,20 +418,16 @@
         const isMobile = window.innerWidth <= 768;
 
         if (isMobile || event.ctrlKey || event.metaKey) {
-            // 全選狀態下點擊任何一個 ➔ 直接變成「單選該宇宙」
             if (selectedUniverses.length === 4) {
                 selectedUniverses = [universe];
             } 
-            // 否則執行一般的多選/取消選取邏輯
             else if (selectedUniverses.includes(universe)) {
                 selectedUniverses = selectedUniverses.filter(u => u !== universe);
-                // 防止全部取消選取，若空了就自動全選
                 if (selectedUniverses.length === 0) selectedUniverses = Object.keys(U_COLORS);
             } else {
                 selectedUniverses.push(universe);
             }
         } else {
-            // 電腦版一般單擊邏輯
             if (selectedUniverses.length === 1 && selectedUniverses[0] === universe) {
                 selectedUniverses = Object.keys(U_COLORS);
             } else {
@@ -492,7 +491,16 @@
             plugins: { legend: { display: false }, tooltip: { backgroundColor: 'rgba(0,0,0,0.8)', titleColor: '#fff', padding: 12 } },
             scales: {
                 y: { grid: { color: 'rgba(255,255,255,0.03)' }, ticks: { color: '#666' } },
-                x: { grid: { display: false }, ticks: { color: '#666' } }
+                x: { 
+                    grid: { display: false }, 
+                    ticks: { 
+                        color: '#666',
+                        maxRotation: 0, /* 強制水平，禁止文字傾斜 */
+                        autoSkip: true,
+                        maxTicksLimit: 5, /* 最多顯示 5 個標籤避免重疊 */
+                        font: { size: 10 }
+                    } 
+                }
             },
             onClick: (e, elements) => {
                 const activePoints = mainChart.getElementsAtEventForMode(e, 'nearest', { intersect: true }, false);
