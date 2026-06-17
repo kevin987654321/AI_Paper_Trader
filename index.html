@@ -158,36 +158,29 @@
         input:checked + .slider { background-color: var(--color-dyn1); box-shadow: 0 0 10px var(--color-dyn1); }
         input:checked + .slider:before { transform: translateX(20px); background-color: #000; }
 
-        /* 🌟 全新高質感頂部抽屜 Modal */
-        .top-modal-overlay {
-            position: fixed; inset: 0; background: rgba(0, 0, 0, 0.3); z-index: 2000;
-            opacity: 0; pointer-events: none; transition: opacity 0.3s ease;
-            backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+        /* 🌟 高質感霧化背景 + 頂端跟手下拉彈窗 */
+        .modal-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100dvh;
+            background: rgba(0, 0, 0, 0.3); z-index: 2000; display: none;
+            backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px);
         }
-        .top-modal-overlay.active { opacity: 1; pointer-events: auto; }
-
-        .top-modal {
-            position: fixed; top: 0; left: 0; width: 100%;
+        .modal-top-box {
+            position: absolute; top: 0; left: 0; width: 100%;
             background: rgba(18, 18, 18, 0.85);
             backdrop-filter: blur(25px); -webkit-backdrop-filter: blur(25px);
-            border-bottom: 1px solid rgba(255,255,255,0.1);
-            border-radius: 0 0 24px 24px; z-index: 2001;
-            padding: 20px 20px 15px 20px;
-            transform: translateY(-100%);
-            transition: transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+            border-bottom-left-radius: 24px; border-bottom-right-radius: 24px;
+            /* 自動計算安全邊距與頂部空間 */
+            padding: max(20px, env(safe-area-inset-top)) 20px 15px 20px;
             box-shadow: 0 15px 40px rgba(0,0,0,0.6);
+            transform: translateY(-100%);
+            transition: transform 0.35s cubic-bezier(0.2, 0.8, 0.2, 1);
+            border-bottom: 1px solid rgba(255,255,255,0.08);
             display: flex; flex-direction: column;
         }
-        @media (min-width: 769px) {
-            .top-modal { left: 260px; width: calc(100% - 260px); }
-        }
-        .top-modal.active { transform: translateY(0); }
-        .top-modal.dragging { transition: none; }
-        
-        .modal-title { font-size: 15px; font-weight: bold; border-bottom: 1px solid rgba(255,255,255,0.06); padding-bottom: 12px; color: #fff; margin-bottom: 12px; }
-        .drag-bar {
-            width: 40px; height: 5px; border-radius: 3px;
-            background: rgba(255,255,255,0.2); margin: 15px auto 0 auto;
+        .modal-title { font-size: 16px; font-weight: bold; border-bottom: 1px solid rgba(255,255,255,0.06); padding-bottom: 10px; color: #fff; margin-bottom: 15px; }
+        .modal-drag-bar {
+            width: 36px; height: 5px; background: rgba(255,255,255,0.3);
+            border-radius: 3px; margin: 15px auto 0 auto; cursor: grab;
         }
 
         /* =========================================
@@ -220,7 +213,8 @@
             
             .view-section {
                 top: 60px; height: calc(100dvh - 60px); 
-                padding: 15px; padding-bottom: max(15px, env(safe-area-inset-bottom));
+                padding: 15px; 
+                padding-bottom: max(15px, env(safe-area-inset-bottom));
             }
             .stat-grid { grid-template-columns: repeat(2, 1fr); height: auto; margin-bottom: 5px; }
             .stat-card { padding: 12px; }
@@ -235,14 +229,14 @@
             
             .gene-grid { grid-template-columns: 1fr; }
             
-            .top-modal { padding-top: 75px; } /* 閃過手機頂部 Navigation */
-
-            /* 🌟 手機版表格極致壓縮：不橫向捲動且保留年份 */
-            .records-table-container { padding: 10px; }
-            table { font-size: 11px; }
-            th, td { padding: 10px 4px; }
-            .badge-buy, .badge-sell { padding: 3px 4px; font-size: 10px; }
-            td:first-child, th:first-child { min-width: 65px; line-height: 1.4; letter-spacing: -0.2px; }
+            /* 🌟 手機版交易紀錄極限壓縮，嚴格禁止橫向卷軸 */
+            .records-table-container { padding: 10px 5px; overflow-x: hidden; }
+            .records-table-container table { font-size: 11px; table-layout: auto; width: 100%; }
+            .records-table-container th, .records-table-container td { 
+                padding: 10px 4px; white-space: nowrap; 
+            }
+            .records-table-container td:first-child { font-size: 10px; letter-spacing: -0.3px; } /* 時間欄位縮小 */
+            .badge-buy, .badge-sell { padding: 2px 4px; font-size: 9px; }
         }
     </style>
 </head>
@@ -385,11 +379,12 @@
     </main>
 </div>
 
-<div class="top-modal-overlay" id="detailModalOverlay" onclick="closeDetailModal()"></div>
-<div class="top-modal" id="detailModalPanel">
-    <div class="modal-title" id="detail-title">宇宙詳情</div>
-    <div id="detail-content" style="color: #bbb; font-size: 13px; line-height: 1.8;"></div>
-    <div class="drag-bar"></div>
+<div class="modal-overlay" id="detailModal" onclick="closeModal('detailModal')">
+    <div class="modal-top-box" id="detailModalBox" onclick="event.stopPropagation()">
+        <div class="modal-title" id="detail-title">宇宙詳情</div>
+        <div style="color: #bbb; font-size: 13px; line-height: 1.8;" id="detail-content"></div>
+        <div class="modal-drag-bar"></div>
+    </div>
 </div>
 
 <script>
@@ -422,16 +417,19 @@
             chartTimestamps.push(Date.now());
             return label;
         });
-        d1 = NAV_HISTORY.DYN_1; d2 = NAV_HISTORY.DYN_2; 
-        s1 = NAV_HISTORY.STA_1; s2 = NAV_HISTORY.STA_2;
+        d1 = NAV_HISTORY.DYN_1;
+        d2 = NAV_HISTORY.DYN_2; 
+        s1 = NAV_HISTORY.STA_1; 
+        s2 = NAV_HISTORY.STA_2;
     }
 
-    // 🌟 首頁金額去除小數點 (只顯示整數)
-    document.getElementById('val-dyn1').innerText = "$ " + d1[d1.length - 1].toLocaleString(undefined, {maximumFractionDigits:0});
-    document.getElementById('val-dyn2').innerText = "$ " + d2[d2.length - 1].toLocaleString(undefined, {maximumFractionDigits:0});
-    document.getElementById('val-sta1').innerText = "$ " + s1[s1.length - 1].toLocaleString(undefined, {maximumFractionDigits:0});
-    document.getElementById('val-sta2').innerText = "$ " + s2[s2.length - 1].toLocaleString(undefined, {maximumFractionDigits:0});
+    // 🌟 金額顯示去小數點 (儀表板專用)
+    document.getElementById('val-dyn1').innerText = "$ " + d1[d1.length - 1].toLocaleString(undefined, {maximumFractionDigits: 0});
+    document.getElementById('val-dyn2').innerText = "$ " + d2[d2.length - 1].toLocaleString(undefined, {maximumFractionDigits: 0});
+    document.getElementById('val-sta1').innerText = "$ " + s1[s1.length - 1].toLocaleString(undefined, {maximumFractionDigits: 0});
+    document.getElementById('val-sta2').innerText = "$ " + s2[s2.length - 1].toLocaleString(undefined, {maximumFractionDigits: 0});
 
+    // 🌟 真實時間軸過濾邏輯
     function updateChartTimeframe(tf) {
         currentGlobalTimeframe = tf || currentGlobalTimeframe;
         if (typeof NAV_HISTORY === 'undefined' || !NAV_HISTORY.labels) return;
@@ -557,7 +555,7 @@
     }
 
     /* =========================================
-       4. Chart.js 初始化與真實數據分析彈窗
+       4. Chart.js 初始化與手勢優化
        ========================================= */
     const chartData = {
         labels: chartLabels,
@@ -590,13 +588,13 @@
         }
     });
 
-    // 🌟 修正手機版長按預覽：放開手指立即消失
+    // 🌟 手機版圖表提示框修改：放開手指立即消失
     canvasEl.addEventListener('touchend', () => {
         if (window.innerWidth <= 768) {
             setTimeout(() => {
                 mainChart.tooltip.setActiveElements([], {x:0, y:0});
                 mainChart.update();
-            }, 100);
+            }, 50);
         }
     });
 
@@ -606,6 +604,7 @@
         updateChartTimeframe(tf);
     }
 
+    // 🌟 頂端彈窗控制邏輯
     function showUniverseDetail(label, color) {
         let key = 'DYN_1';
         if (label.includes('DYN_2') || label.includes('穩健 AI')) key = 'DYN_2';
@@ -623,6 +622,8 @@
         const returnColor = totalReturn >= 0 ? '#00ffaa' : '#ff4560';
 
         document.getElementById('detail-title').innerHTML = `<span style="color:${color}">●</span> ${label} 核心量化透視`;
+        
+        // 詳情內依然保留小數點1位
         document.getElementById('detail-content').innerHTML = `
             <table style="width:100%; border-collapse:collapse; font-family:monospace; font-size:13px;">
                 <tr style="border-bottom:1px solid rgba(255,255,255,0.05);"><td style="padding:8px 0; color:#888;">最新資產淨值:</td><td style="text-align:right; color:#fff; font-weight:bold;">$ ${latest.toLocaleString(undefined, {minimumFractionDigits:1, maximumFractionDigits:1})}</td></tr>
@@ -632,56 +633,28 @@
                 <tr><td style="padding:8px 0; color:#888;">策略防禦狀態:</td><td style="text-align:right; color:#fff;">ATR 智能移動追蹤停損運作中</td></tr>
             </table>`;
             
-        // 喚起頂部抽屜
-        document.getElementById('detailModalOverlay').classList.add('active');
-        document.getElementById('detailModalPanel').classList.add('active');
+        const overlay = document.getElementById('detailModal');
+        const box = document.getElementById('detailModalBox');
+        overlay.style.display = 'flex';
+        // 強制重繪以觸發動畫
+        void box.offsetWidth;
+        box.style.transform = 'translateY(0)';
     }
 
-    function closeDetailModal() { 
-        document.getElementById('detailModalOverlay').classList.remove('active');
-        const panel = document.getElementById('detailModalPanel');
-        panel.classList.remove('active');
-        panel.style.transform = '';
+    function closeModal(id) { 
+        const overlay = document.getElementById(id);
+        const box = document.getElementById('detailModalBox');
+        if(box) box.style.transform = 'translateY(-100%)';
+        setTimeout(() => {
+            overlay.style.display = 'none';
+        }, 350); // 等待動畫結束
     }
-
-    /* =========================================
-       5. 🌟 頂部抽屜跟手滑動控制邏輯
-       ========================================= */
-    const topModal = document.getElementById('detailModalPanel');
-    let tmStartY = 0, tmCurrentY = 0, tmDragging = false;
-
-    topModal.addEventListener('touchstart', e => {
-        tmStartY = e.touches[0].clientY;
-        tmDragging = true;
-        topModal.classList.add('dragging');
-    }, {passive: true});
-
-    topModal.addEventListener('touchmove', e => {
-        if (!tmDragging) return;
-        tmCurrentY = e.touches[0].clientY;
-        let diffY = tmCurrentY - tmStartY;
-        if (diffY > 0) diffY = diffY * 0.2; // 向下拉產生橡皮筋阻力
-        topModal.style.transform = `translateY(${diffY}px)`;
-        e.preventDefault(); // 防止穿透滾動
-    }, {passive: false});
-
-    topModal.addEventListener('touchend', e => {
-        if (!tmDragging) return;
-        tmDragging = false;
-        topModal.classList.remove('dragging');
-        let diffY = tmCurrentY - tmStartY;
-        // 向上滑動超過 30px 即視為關閉
-        if (diffY < -30) {
-            closeDetailModal();
-        } else {
-            topModal.style.transform = ''; // 放手回彈
-        }
-    });
-
-    /* =========================================
-       6. 終端機互動與問答邏輯
-       ========================================= */
+    
     function handleEnter(e) { if (e.key === 'Enter') askAI(); }
+
+    /* =========================================
+       5. 終端機互動與問答邏輯
+       ========================================= */
     async function askAI() {
         const input = document.getElementById('chat-input');
         const output = document.getElementById('chat-output');
@@ -752,75 +725,140 @@
     }
 
     /* =========================================
-       7. 側邊欄防誤觸與滑動邏輯 (Swipe Lock)
+       6. 🌟 智慧防誤觸與側邊欄/彈窗滑動邏輯 (Swipe Lock)
        ========================================= */
     const sidebarEl = document.getElementById('sidebar');
     const overlayEl = document.getElementById('sidebar-overlay');
-    let sStartX = 0, sStartY = 0, sCurrentX = 0, sDragging = false, sDetermined = false;
+    let touchStartX = 0; let touchStartY = 0; 
+    let touchCurrentX = 0; let isDraggingMenu = false; let isDetermined = false;
+    
+    const SIDEBAR_WIDTH = 260; 
+    const SWIPE_THRESHOLD = SIDEBAR_WIDTH * 0.25; 
+
+    function toggleSidebar() {
+        const isOpen = sidebarEl.classList.contains('open');
+        if (isOpen) {
+            sidebarEl.classList.remove('open'); overlayEl.classList.remove('active');
+        } else {
+            sidebarEl.classList.add('open'); overlayEl.classList.add('active');
+        }
+        sidebarEl.style.transform = ''; 
+    }
 
     document.addEventListener('touchstart', (e) => {
         if (window.innerWidth > 768) return; 
-
-        // 🌟 核心防護鎖：在圖表、表格、對話框滑動時，完全封鎖側邊欄的滑動偵測
-        const ignoreSwipeSelectors = ['canvas', '.records-table-container', '.chat-display', 'input', '.tf-btn', '.top-modal'];
+        const ignoreSwipeSelectors = ['canvas', '.records-table-container', '.chat-display', 'input', '.tf-btn', '.modal-top-box'];
         if (e.target.closest(ignoreSwipeSelectors.join(', '))) {
-            sDragging = false;
+            isDraggingMenu = false;
             return;
         }
 
-        sStartX = e.touches[0].clientX;
-        sStartY = e.touches[0].clientY;
-        sDragging = true;
-        sDetermined = false;
+        touchStartX = e.touches[0].clientX;
+        touchStartY = e.touches[0].clientY;
+        isDraggingMenu = true;
+        isDetermined = false;
 
         const isOpen = sidebarEl.classList.contains('open');
-        if (!isOpen && sStartX > window.innerWidth * 0.5) sDragging = false; 
+        if (!isOpen && touchStartX > window.innerWidth * 0.5) {
+            isDraggingMenu = false; 
+        }
     }, {passive: true});
 
     document.addEventListener('touchmove', (e) => {
-        if (!sDragging || window.innerWidth > 768) return;
-        sCurrentX = e.touches[0].clientX;
-        const diffX = sCurrentX - sStartX;
-        const diffY = e.touches[0].clientY - sStartY;
+        if (!isDraggingMenu || window.innerWidth > 768) return;
+        touchCurrentX = e.touches[0].clientX;
+        const touchCurrentY = e.touches[0].clientY;
+        const diffX = touchCurrentX - touchStartX;
+        const diffY = touchCurrentY - touchStartY;
 
-        if (!sDetermined) {
-            if (Math.abs(diffX) > Math.abs(diffY)) sDetermined = true; 
-            else { sDragging = false; return; }
+        if (!isDetermined) {
+            if (Math.abs(diffX) > Math.abs(diffY)) {
+                isDetermined = true; 
+            } else {
+                isDraggingMenu = false; 
+                return;
+            }
         }
 
         const isOpen = sidebarEl.classList.contains('open');
         if (!isOpen && diffX > 0) {
             if (e.cancelable) e.preventDefault(); 
             sidebarEl.classList.add('dragging');
-            sidebarEl.style.transform = `translateX(${Math.min(diffX - 260, 0)}px)`;
+            const moveX = Math.min(diffX - SIDEBAR_WIDTH, 0); 
+            sidebarEl.style.transform = `translateX(${moveX}px)`;
         } else if (isOpen && diffX < 0) {
             if (e.cancelable) e.preventDefault();
             sidebarEl.classList.add('dragging');
-            sidebarEl.style.transform = `translateX(${Math.max(diffX, -260)}px)`;
+            const moveX = Math.max(diffX, -SIDEBAR_WIDTH);
+            sidebarEl.style.transform = `translateX(${moveX}px)`;
         }
     }, {passive: false});
 
-    document.addEventListener('touchend', () => {
-        if (!sDragging || window.innerWidth > 768) return;
-        sDragging = false;
+    document.addEventListener('touchend', (e) => {
+        if (!isDraggingMenu || window.innerWidth > 768) return;
+        isDraggingMenu = false;
         sidebarEl.classList.remove('dragging');
         
-        const diffX = sCurrentX - sStartX;
+        const diffX = touchCurrentX - touchStartX;
+        const absDiff = Math.abs(diffX);
         const isOpen = sidebarEl.classList.contains('open');
 
-        if (sCurrentX !== 0) {
-            if (!isOpen && diffX > 65) {
-                sidebarEl.classList.add('open'); overlayEl.classList.add('active');
-            } else if (isOpen && diffX < -65) {
-                sidebarEl.classList.remove('open'); overlayEl.classList.remove('active');
+        if (touchCurrentX !== 0) {
+            if (!isOpen && diffX > 0) {
+                if (diffX > SWIPE_THRESHOLD) {
+                    sidebarEl.classList.add('open'); overlayEl.classList.add('active');
+                }
+            } else if (isOpen && diffX < 0) {
+                if (absDiff > SWIPE_THRESHOLD) {
+                    sidebarEl.classList.remove('open'); overlayEl.classList.remove('active');
+                }
             }
         }
         sidebarEl.style.transform = ''; 
-        sStartX = 0; sStartY = 0; sCurrentX = 0;
+        touchStartX = 0; touchStartY = 0; touchCurrentX = 0;
+    });
+
+    // 🌟 頂端彈窗專屬跟手向上滑動邏輯
+    const detailModalBox = document.getElementById('detailModalBox');
+    let modalStartY = 0, modalCurrentY = 0, isDraggingModal = false;
+
+    detailModalBox.addEventListener('touchstart', (e) => {
+        modalStartY = e.touches[0].clientY;
+        isDraggingModal = true;
+        detailModalBox.style.transition = 'none'; // 拔掉動畫使其 1:1 跟手
+    }, {passive: true});
+
+    detailModalBox.addEventListener('touchmove', (e) => {
+        if (!isDraggingModal) return;
+        modalCurrentY = e.touches[0].clientY;
+        const diffY = modalCurrentY - modalStartY;
+        
+        // 只能向上滑動關閉
+        if (diffY < 0) {
+            if(e.cancelable) e.preventDefault();
+            detailModalBox.style.transform = `translateY(${diffY}px)`;
+        }
+    }, {passive: false});
+
+    detailModalBox.addEventListener('touchend', (e) => {
+        if (!isDraggingModal) return;
+        isDraggingModal = false;
+        const diffY = modalCurrentY - modalStartY;
+        
+        detailModalBox.style.transition = 'transform 0.35s cubic-bezier(0.2, 0.8, 0.2, 1)';
+        
+        // 向上滑動超過 40px 即判定為關閉
+        if (modalCurrentY !== 0 && diffY < -40) {
+            closeModal('detailModal');
+        } else {
+            // 距離不夠則平滑彈回原位
+            detailModalBox.style.transform = 'translateY(0)';
+        }
+        modalStartY = 0; modalCurrentY = 0;
     });
 
     /* =========================================
-       8. 帳本過濾與手機版極致壓縮
+       7. 帳本過濾與本地時間翻譯
        ========================================= */
     let allLedgerRecords = [];
 
@@ -833,14 +871,21 @@
         ];
         
         allLedgerRecords = [];
+        let loadedCount = 0;
+        
         for (const u of universes) {
             try {
                 const response = await fetch(u.path);
                 if (!response.ok) continue;
                 const text = await response.text();
-                allLedgerRecords = allLedgerRecords.concat(parseCSVLedger(text, u.name));
-            } catch (e) { }
+                const records = parseCSVLedger(text, u.name);
+                allLedgerRecords = allLedgerRecords.concat(records);
+                loadedCount++;
+            } catch (e) {
+                console.warn(`[CSV LOADER] 無法讀取 ${u.name} 異步帳本:`, e);
+            }
         }
+        
         allLedgerRecords.sort((a, b) => new Date(b.time.replace(' ', 'T') + 'Z') - new Date(a.time.replace(' ', 'T') + 'Z'));
         renderLedgerTable();
     }
@@ -848,8 +893,10 @@
     function parseCSVLedger(text, universeName) {
         const lines = text.split('\n');
         if (lines.length <= 1) return [];
+        
         const headers = lines[0].split(',').map(h => h.trim().toLowerCase());
         const records = [];
+        
         const timeIdx = headers.findIndex(h => h.includes('time') || h.includes('時間') || h.includes('date'));
         const tickerIdx = headers.findIndex(h => h.includes('ticker') || h.includes('標的') || h.includes('symbol'));
         const actionIdx = headers.findIndex(h => h.includes('action') || h.includes('動作') || h.includes('type') || h.includes('side'));
@@ -860,6 +907,7 @@
             const line = lines[i].trim();
             if (!line) continue;
             const cols = line.split(',');
+            
             const action = actionIdx !== -1 && cols[actionIdx] ? cols[actionIdx].replace(/"/g, '').trim().toUpperCase() : 'BUY';
             const ticker = tickerIdx !== -1 && cols[tickerIdx] ? cols[tickerIdx].replace(/"/g, '').trim() : '未知';
             if (action === 'DEPOSIT' || ticker === 'NONE') continue; 
@@ -877,6 +925,7 @@
                     rawTime = `${yyyy}-${mm}-${dd} ${hh}:${min}`;
                 }
             }
+            
             records.push({
                 time: rawTime, ticker: ticker, action: action,
                 qty: qtyIdx !== -1 && cols[qtyIdx] ? parseInt(cols[qtyIdx].replace(/"/g, '')) : 0,
@@ -897,15 +946,12 @@
             return;
         }
         
-        const isMobile = window.innerWidth <= 768;
         tbody.innerHTML = filtered.map(r => {
             const isBuy = r.action.includes('BUY');
             const badgeClass = isBuy ? 'badge-buy' : 'badge-sell';
-            // 🌟 手機版將日期與時間斷行堆疊，省下大量橫向空間
-            const displayTime = isMobile ? r.time.replace(' ', '<br>') : r.time;
             return `
                 <tr>
-                    <td>${displayTime}</td>
+                    <td>${r.time}</td>
                     <td>${r.ticker}</td>
                     <td><span class="${badgeClass}">${r.action}</span></td>
                     <td>${r.qty.toLocaleString()}</td>
@@ -938,7 +984,9 @@
                     card2.querySelector('div div:nth-child(2) strong').nextSibling.textContent = ` ${(config.DYN_2.risk * 100).toFixed(1)}%`;
                 }
             }
-        } catch (e) { }
+        } catch (e) {
+            console.log("[GENE OPTIMIZER] 沿用底層系統基因預設值。");
+        }
     }
 
     function initSettingsPersistence() {
