@@ -170,7 +170,7 @@
         input:checked + .slider { background-color: var(--color-dyn1); box-shadow: 0 0 10px var(--color-dyn1); }
         input:checked + .slider:before { transform: translateX(20px); background-color: #000; }
 
-        /* 🌟 高質感霧化背景 + 頂端跟手下拉彈窗 */
+        /* 高質感霧化背景 + 頂端跟手下拉彈窗 */
         .modal-overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100dvh;
             background: rgba(0, 0, 0, 0.3); z-index: 2000; display: none;
@@ -209,7 +209,18 @@
             }
             .mobile-menu-btn {
                 background: transparent; border: none; color: #fff; font-size: 20px; cursor: pointer; padding: 10px; margin-left: -10px;
+                z-index: 2; /* 確保按鈕在最上層 */
             }
+            /* 🌟 修改標題：使用絕對定位徹底置中 */
+            .mobile-header-title {
+                position: absolute; left: 50%; transform: translateX(-50%);
+                font-weight: 900; letter-spacing: 3px; font-size: 16px; color: #fff; cursor: pointer;
+                white-space: nowrap; z-index: 1;
+            }
+            .mobile-reload-btn {
+                width: 50px; height: 100%; cursor: pointer; z-index: 2; margin-right: -10px;
+            }
+            
             #sidebar-overlay.active {
                 display: block; position: fixed; inset: 0; background: rgba(0,0,0,0.6);
                 z-index: 900; backdrop-filter: blur(2px);
@@ -265,10 +276,10 @@
 <div id="content-area">
     <div id="mobile-header">
         <button class="mobile-menu-btn" onclick="toggleSidebar()"><i class="fa-solid fa-bars"></i></button>
-        <div style="font-weight: 900; letter-spacing: 3px; font-size: 16px; color: #fff; cursor: pointer; flex: 1; text-align: center; margin-right: -30px;" onclick="switchView('view-dashboard', document.querySelectorAll('.menu-item')[0])">
+        <div class="mobile-header-title" onclick="switchView('view-dashboard', document.querySelectorAll('.menu-item')[0])">
             <i class="fa-brands fa-connectdevelop"></i> 4D MATRIX
         </div>
-        <div style="width: 50px; height: 100%; position: absolute; right: 0; top: 0; z-index: 100;" onclick="location.reload()"></div>
+        <div class="mobile-reload-btn" onclick="location.reload()"></div>
     </div>
 
     <main id="view-dashboard" class="view-section active">
@@ -445,7 +456,6 @@
     document.getElementById('val-sta1').innerText = "$ " + s1[s1.length - 1].toLocaleString(undefined, {maximumFractionDigits: 0});
     document.getElementById('val-sta2').innerText = "$ " + s2[s2.length - 1].toLocaleString(undefined, {maximumFractionDigits: 0});
 
-    // 🌟 反向推進 1D 真實時間軸過濾邏輯，不再漏掉最新數據
     function updateChartTimeframe(tf) {
         currentGlobalTimeframe = tf || currentGlobalTimeframe;
         if (typeof NAV_HISTORY === 'undefined' || !NAV_HISTORY.labels) return;
@@ -462,7 +472,6 @@
                 const latestDate = new Date(latestTimeMs);
                 const startOfDay = new Date(latestDate.getFullYear(), latestDate.getMonth(), latestDate.getDate()).getTime();
                 
-                // 從最新的一筆往前找，直到找到低於今天 00:00 的那筆為止
                 for (let i = totalPoints - 1; i >= 0; i--) {
                     if (chartTimestamps[i] < startOfDay) {
                         startIndex = i + 1;
@@ -487,7 +496,10 @@
             }
         }
         
-        mainChart.options.scales.x.ticks.maxTicksLimit = currentGlobalTimeframe === '1D' ? 8 : 6;
+        // 🌟 針對手機版做標籤數量動態管控，避免 X 軸字體重疊
+        const isMobile = window.innerWidth <= 768;
+        mainChart.options.scales.x.ticks.maxTicksLimit = isMobile ? 4 : (currentGlobalTimeframe === '1D' ? 8 : 6);
+        
         mainChart.data.labels = chartLabels.slice(startIndex);
         mainChart.data.datasets[0].data = d1.slice(startIndex);
         mainChart.data.datasets[1].data = d2.slice(startIndex);
@@ -524,7 +536,7 @@
     }
 
     /* =========================================
-       3. 🌟 長按總覽與單擊聚焦分離邏輯
+       3. 矩陣狀態機邏輯 & 長按事件
        ========================================= */
     let selectedUniverses = ['DYN_1', 'DYN_2', 'STA_1', 'STA_2'];
     let cardLongPressed = false;
@@ -537,7 +549,7 @@
             cardLongPressed = false;
             cardTimer = setTimeout(() => {
                 cardLongPressed = true;
-                showUniverseOverallDetail(u); // 長按觸發顯示總覽
+                showUniverseOverallDetail(u); 
             }, 500);
         };
         const cancelPress = () => { if(cardTimer) clearTimeout(cardTimer); };
@@ -551,7 +563,7 @@
     });
 
     function handleCardClick(universe, event) {
-        if (cardLongPressed) return; // 🌟 阻擋長按放開時觸發點擊邏輯
+        if (cardLongPressed) return; 
 
         const isMobile = window.innerWidth <= 768;
         if (isMobile || event.ctrlKey || event.metaKey) {
@@ -608,7 +620,7 @@
     }
 
     /* =========================================
-       4. Chart.js 🌟 胖手指優化與單一節點透視
+       4. Chart.js 初始化與手勢優化
        ========================================= */
     const chartData = {
         labels: chartLabels,
@@ -623,7 +635,6 @@
     const canvasEl = document.getElementById('mainChart');
     let canvasTouchStart = 0;
     
-    // 🌟 圖表觸控追蹤，用來判定是短擊還是長按
     canvasEl.addEventListener('touchstart', (e) => {
         canvasTouchStart = Date.now();
     }, {passive: true});
@@ -636,11 +647,11 @@
             plugins: { legend: { display: false }, tooltip: { backgroundColor: 'rgba(0,0,0,0.8)', titleColor: '#fff', padding: 12 } },
             scales: {
                 y: { grid: { color: 'rgba(255,255,255,0.03)' }, ticks: { color: '#666' } },
-                x: { grid: { display: false }, ticks: { color: '#666', maxRotation: 0, autoSkip: true, maxTicksLimit: 6, align: 'inner', font: { size: 10 } } }
+                x: { grid: { display: false }, ticks: { color: '#666', maxRotation: 0, autoSkip: true, font: { size: 10 } } }
             },
             onClick: (e, elements) => {
                 if (window.innerWidth <= 768 && Date.now() - canvasTouchStart > 300) {
-                    return; // 🌟 如果按超過 300ms 就不觸發點擊事件
+                    return; 
                 }
                 const activePoints = mainChart.getElementsAtEventForMode(e, 'nearest', { intersect: true }, false);
                 if (activePoints.length > 0) {
@@ -668,7 +679,6 @@
         updateChartTimeframe(tf);
     }
 
-    // 🌟 點擊節點顯示「單一時間點」專屬資訊
     function showPointDetail(label, color, timeLabel, value) {
         let universeName = '';
         if (label.includes('DYN_1')) universeName = 'DYN_1 (積極 AI)';
@@ -691,7 +701,6 @@
         box.style.transform = 'translateY(0)';
     }
 
-    // 🌟 長按卡片顯示「宇宙完整總覽」
     function showUniverseOverallDetail(uKey) {
         let label = '';
         if (uKey === 'DYN_1') label = 'DYN_1 (積極 AI)';
@@ -808,7 +817,7 @@
     }
 
     /* =========================================
-       6. 🌟 智慧防誤觸與側邊欄滑動解鎖 (Swipe Unlocked)
+       6. 🌟 智慧防誤觸與側邊欄滑動解鎖
        ========================================= */
     const sidebarEl = document.getElementById('sidebar');
     const overlayEl = document.getElementById('sidebar-overlay');
@@ -902,7 +911,6 @@
         touchStartX = 0; touchStartY = 0; touchCurrentX = 0;
     });
 
-    // 🌟 頂端彈窗專屬跟手向上滑動邏輯
     const detailModalBox = document.getElementById('detailModalBox');
     let modalStartY = 0, modalCurrentY = 0, isDraggingModal = false;
 
