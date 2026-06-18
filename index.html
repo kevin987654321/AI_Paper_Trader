@@ -92,6 +92,7 @@
         }
         .view-section.active { opacity: 1; pointer-events: auto; }
 
+        /* 視圖元件 */
         .stat-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; height: 96px; flex-shrink: 0; }
         .stat-card { padding: 16px; cursor: pointer; border-color: rgba(255,255,255,0.04); }
         .stat-card.active-focus { background: rgba(255, 255, 255, 0.04); box-shadow: inset 0 0 15px rgba(255,255,255,0.02); }
@@ -148,6 +149,18 @@
         .gene-circle { width: 120px; height: 120px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 24px; font-weight: bold; border: 2px dashed rgba(255,255,255,0.2); position: relative; }
         .gene-circle::after { content: ""; position: absolute; inset: -10px; border-radius: 50%; border: 1px solid transparent; border-top-color: inherit; animation: spin 4s linear infinite; }
         @keyframes spin { 100% { transform: rotate(360deg); } }
+
+        /* 🌟 新增：標的戰況監控網格卡片樣式 */
+        .stock-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 15px; align-content: start; padding-bottom: 20px; }
+        .stock-card { padding: 18px; display: flex; flex-direction: column; gap: 12px; }
+        .stock-card-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,255,255,0.06); padding-bottom: 12px; }
+        .stock-ticker { font-size: 18px; font-weight: 900; color: #fff; letter-spacing: 1px; }
+        .stock-price { font-size: 16px; color: #fff; font-family: monospace; font-weight: bold; }
+        .stock-rsi { font-size: 11px; padding: 4px 8px; border-radius: 4px; background: rgba(255,255,255,0.1); font-weight: bold; }
+        .stock-rsi.overbought { color: #ff4560; background: rgba(255,69,96,0.15); border: 1px solid rgba(255,69,96,0.3); }
+        .stock-rsi.oversold { color: #00ffaa; background: rgba(0,255,170,0.15); border: 1px solid rgba(0,255,170,0.3); }
+        .stock-universe-list { display: flex; flex-direction: column; gap: 8px; font-size: 12px; font-family: monospace; }
+        .stock-u-row { display: flex; justify-content: space-between; padding: 10px; background: rgba(0,0,0,0.3); border-radius: 6px; border-left: 3px solid transparent; }
 
         .settings-list { max-width: 600px; margin: 0 auto; display: flex; flex-direction: column; gap: 15px; padding-top: 40px; width: 100%; }
         .setting-item { display: flex; justify-content: space-between; align-items: center; padding: 20px; }
@@ -227,13 +240,12 @@
             .send-btn { width: 75px; padding: 0; font-size: 11px; flex-shrink: 0; }
             
             .gene-grid { grid-template-columns: 1fr; }
+            .stock-grid { grid-template-columns: 1fr; }
             
-            /* 🌟 手機版交易紀錄極限壓縮，嚴格禁止橫向卷軸，但保留年份 */
+            /* 手機版交易紀錄極限壓縮 */
             .records-table-container { padding: 10px 5px; overflow-x: hidden; }
             .records-table-container table { font-size: 11px; table-layout: auto; width: 100%; }
-            .records-table-container th, .records-table-container td { 
-                padding: 10px 4px; white-space: nowrap; 
-            }
+            .records-table-container th, .records-table-container td { padding: 10px 4px; white-space: nowrap; }
             .records-table-container td:first-child { font-size: 10px; letter-spacing: -0.3px; }
             .badge-buy, .badge-sell { padding: 2px 4px; font-size: 9px; }
         }
@@ -247,6 +259,7 @@
     <div class="glass-title-text" id="brand-logo"><i class="fa-brands fa-connectdevelop"></i> 4D MATRIX</div>
     <div class="menu-item active" onclick="switchView('view-dashboard', this)"><i class="fa-solid fa-chart-line"></i> 指揮中心</div>
     <div class="menu-item" onclick="switchView('view-records', this)"><i class="fa-solid fa-list-ul"></i> 交易紀錄回溯</div>
+    <div class="menu-item" onclick="switchView('view-stocks', this)"><i class="fa-solid fa-crosshairs"></i> 標的戰況監控</div>
     <div class="menu-item" onclick="switchView('view-genes', this)"><i class="fa-solid fa-microchip"></i> AI 基因配置</div>
     <div class="menu-item" style="margin-top: auto;" onclick="switchView('view-settings', this)"><i class="fa-solid fa-gear"></i> 系統設定</div>
 </aside>
@@ -320,9 +333,15 @@
         <div class="glass-panel records-table-container">
             <table>
                 <thead><tr><th>本地時間</th><th>標的</th><th>動作</th><th>股數</th><th>價格</th><th>宇宙</th></tr></thead>
-                <tbody>
-                    </tbody>
+                <tbody></tbody>
             </table>
+        </div>
+    </main>
+
+    <main id="view-stocks" class="view-section">
+        <h2 style="margin: 0; font-size: 18px; letter-spacing: 2px;"><i class="fa-solid fa-crosshairs"></i> 全市場標的監控</h2>
+        <div class="stock-grid" id="stock-grid-container">
+            <div style="color:#888; padding: 20px;">等待 Python 掃描器產出戰況數據...</div>
         </div>
     </main>
 
@@ -394,6 +413,7 @@
     let chartTimestamps = []; 
     let d1 = [100000], d2 = [100000], s1 = [100000], s2 = [100000];
     let currentGlobalTimeframe = '1D';
+    const U_COLORS = { 'DYN_1': '#00ffaa', 'DYN_2': '#00d4ff', 'STA_1': '#ff4560', 'STA_2': '#feb019' };
 
     if (typeof NAV_HISTORY !== 'undefined') {
         const currentYear = new Date().getFullYear();
@@ -422,13 +442,11 @@
         s2 = NAV_HISTORY.STA_2;
     }
 
-    // 🌟 金額顯示去小數點 (儀表板專用)
     document.getElementById('val-dyn1').innerText = "$ " + d1[d1.length - 1].toLocaleString(undefined, {maximumFractionDigits: 0});
     document.getElementById('val-dyn2').innerText = "$ " + d2[d2.length - 1].toLocaleString(undefined, {maximumFractionDigits: 0});
     document.getElementById('val-sta1').innerText = "$ " + s1[s1.length - 1].toLocaleString(undefined, {maximumFractionDigits: 0});
     document.getElementById('val-sta2').innerText = "$ " + s2[s2.length - 1].toLocaleString(undefined, {maximumFractionDigits: 0});
 
-    // 🌟 嚴格 1D 真實時間軸過濾邏輯
     function updateChartTimeframe(tf) {
         currentGlobalTimeframe = tf || currentGlobalTimeframe;
         if (typeof NAV_HISTORY === 'undefined' || !NAV_HISTORY.labels) return;
@@ -442,7 +460,6 @@
             const latestTimeMs = chartTimestamps[totalPoints - 1]; 
             
             if (currentGlobalTimeframe === '1D') {
-                // 🌟 1D：取得最後一筆資料的「該日 00:00」，只顯示當日開盤到現在
                 const latestDate = new Date(latestTimeMs);
                 const startOfDay = new Date(latestDate.getFullYear(), latestDate.getMonth(), latestDate.getDate()).getTime();
                 
@@ -459,7 +476,6 @@
                     case '1M': msLimit = 30 * 24 * 60 * 60 * 1000; break;
                     case '3M': msLimit = 90 * 24 * 60 * 60 * 1000; break;
                 }
-                
                 if (msLimit !== Infinity) {
                     for (let i = 0; i < totalPoints; i++) {
                         if (latestTimeMs - chartTimestamps[i] <= msLimit) {
@@ -503,13 +519,13 @@
             toggleSidebar();
         }
         if (viewId === 'view-records') renderLedgerTable();
+        if (viewId === 'view-stocks') loadStockStatus();
     }
 
     /* =========================================
        3. 矩陣狀態機邏輯
        ========================================= */
     let selectedUniverses = ['DYN_1', 'DYN_2', 'STA_1', 'STA_2'];
-    const U_COLORS = { 'DYN_1': '#00ffaa', 'DYN_2': '#00d4ff', 'STA_1': '#ff4560', 'STA_2': '#feb019' };
 
     function handleCardClick(universe, event) {
         const isMobile = window.innerWidth <= 768;
@@ -600,7 +616,6 @@
         }
     });
 
-    // 🌟 手機版圖表提示框修改：放開手指立即消失
     canvasEl.addEventListener('touchend', () => {
         if (window.innerWidth <= 768) {
             setTimeout(() => {
@@ -616,7 +631,6 @@
         updateChartTimeframe(tf);
     }
 
-    // 🌟 頂端彈窗控制邏輯
     function showUniverseDetail(label, color) {
         let key = 'DYN_1';
         if (label.includes('DYN_2') || label.includes('穩健 AI')) key = 'DYN_2';
@@ -635,7 +649,6 @@
 
         document.getElementById('detail-title').innerHTML = `<span style="color:${color}">●</span> ${label} 核心量化透視`;
         
-        // 詳情內依然保留小數點1位
         document.getElementById('detail-content').innerHTML = `
             <table style="width:100%; border-collapse:collapse; font-family:monospace; font-size:13px;">
                 <tr style="border-bottom:1px solid rgba(255,255,255,0.05);"><td style="padding:8px 0; color:#888;">最新資產淨值:</td><td style="text-align:right; color:#fff; font-weight:bold;">$ ${latest.toLocaleString(undefined, {minimumFractionDigits:1, maximumFractionDigits:1})}</td></tr>
@@ -648,7 +661,6 @@
         const overlay = document.getElementById('detailModal');
         const box = document.getElementById('detailModalBox');
         overlay.style.display = 'flex';
-        // 強制重繪以觸發動畫
         void box.offsetWidth;
         box.style.transform = 'translateY(0)';
     }
@@ -657,9 +669,7 @@
         const overlay = document.getElementById(id);
         const box = document.getElementById('detailModalBox');
         if(box) box.style.transform = 'translateY(-100%)';
-        setTimeout(() => {
-            overlay.style.display = 'none';
-        }, 350); // 等待動畫結束
+        setTimeout(() => { overlay.style.display = 'none'; }, 350); 
     }
     
     function handleEnter(e) { if (e.key === 'Enter') askAI(); }
@@ -760,7 +770,7 @@
     document.addEventListener('touchstart', (e) => {
         if (window.innerWidth > 768) return; 
         
-        // 🌟 解除表格與終端區的鎖定：只鎖定按鈕、圖表本體與彈窗，其他地方橫滑皆可開選單
+        // 🌟 拔除表格與終端區鎖定，只鎖定容易誤觸的圖表和彈窗
         const ignoreSwipeSelectors = ['canvas', '.tf-btn', '.modal-top-box'];
         if (e.target.closest(ignoreSwipeSelectors.join(', '))) {
             isDraggingMenu = false;
@@ -839,7 +849,7 @@
     detailModalBox.addEventListener('touchstart', (e) => {
         modalStartY = e.touches[0].clientY;
         isDraggingModal = true;
-        detailModalBox.style.transition = 'none'; // 拔掉動畫使其 1:1 跟手
+        detailModalBox.style.transition = 'none'; 
     }, {passive: true});
 
     detailModalBox.addEventListener('touchmove', (e) => {
@@ -847,7 +857,6 @@
         modalCurrentY = e.touches[0].clientY;
         const diffY = modalCurrentY - modalStartY;
         
-        // 只能向上滑動關閉
         if (diffY < 0) {
             if(e.cancelable) e.preventDefault();
             detailModalBox.style.transform = `translateY(${diffY}px)`;
@@ -861,11 +870,9 @@
         
         detailModalBox.style.transition = 'transform 0.35s cubic-bezier(0.2, 0.8, 0.2, 1)';
         
-        // 向上滑動超過 40px 即判定為關閉
         if (modalCurrentY !== 0 && diffY < -40) {
             closeModal('detailModal');
         } else {
-            // 距離不夠則平滑彈回原位
             detailModalBox.style.transform = 'translateY(0)';
         }
         modalStartY = 0; modalCurrentY = 0;
@@ -885,7 +892,6 @@
         ];
         
         allLedgerRecords = [];
-        let loadedCount = 0;
         
         for (const u of universes) {
             try {
@@ -894,10 +900,7 @@
                 const text = await response.text();
                 const records = parseCSVLedger(text, u.name);
                 allLedgerRecords = allLedgerRecords.concat(records);
-                loadedCount++;
-            } catch (e) {
-                console.warn(`[CSV LOADER] 無法讀取 ${u.name} 異步帳本:`, e);
-            }
+            } catch (e) { }
         }
         
         allLedgerRecords.sort((a, b) => new Date(b.time.replace(' ', 'T') + 'Z') - new Date(a.time.replace(' ', 'T') + 'Z'));
@@ -976,6 +979,68 @@
         }).join('');
     }
 
+    /* =========================================
+       8. 🌟 標的戰況監控資料讀取器
+       ========================================= */
+    async function loadStockStatus() {
+        try {
+            const res = await fetch('data/stock_status.json');
+            if (!res.ok) throw new Error('Data not found');
+            const data = await res.json();
+            
+            const container = document.getElementById('stock-grid-container');
+            container.innerHTML = '';
+            
+            for (const [ticker, info] of Object.entries(data)) {
+                let rsiClass = '';
+                if (info.rsi > 70) rsiClass = 'overbought';
+                if (info.rsi < 30) rsiClass = 'oversold';
+                
+                let html = `
+                <div class="glass-panel stock-card">
+                    <div class="stock-card-header">
+                        <div class="stock-ticker">${ticker}</div>
+                        <div style="display:flex; gap:10px; align-items:center;">
+                            <div class="stock-rsi ${rsiClass}">RSI: ${info.rsi.toFixed(1)}</div>
+                            <div class="stock-price">$${info.price.toFixed(1)}</div>
+                        </div>
+                    </div>
+                    <div class="stock-universe-list">
+                `;
+                
+                const uKeys = ['DYN_1', 'DYN_2', 'STA_1', 'STA_2'];
+                
+                uKeys.forEach(u => {
+                    const uData = info.universes[u];
+                    if (!uData) return;
+                    
+                    let statusText = '';
+                    if (uData.shares > 0) {
+                        statusText = `<span style="color:#00ffaa">持股 ${uData.shares} 股 (價值 $${uData.value.toLocaleString(undefined, {maximumFractionDigits:0})})</span><br>
+                                      <span style="color:#ff4560">移動停損: $${uData.stop_price.toFixed(1)}</span>`;
+                    } else {
+                        statusText = `<span style="color:#aaa">空手觀望</span><br>
+                                      <span style="color:#00d4ff">預期買進實力: ${uData.est_buy_shares} 股</span>`;
+                    }
+                    
+                    html += `
+                        <div class="stock-u-row" style="border-left-color: ${U_COLORS[u]};">
+                            <div style="color:${U_COLORS[u]}; font-weight:bold; width: 50px; display:flex; align-items:center;">${u}</div>
+                            <div style="text-align:right; flex:1; line-height:1.6;">
+                                ${statusText}
+                            </div>
+                        </div>
+                    `;
+                });
+                
+                html += `</div></div>`;
+                container.innerHTML += html;
+            }
+        } catch (e) {
+            document.getElementById('stock-grid-container').innerHTML = `<div style="color:#888; padding: 20px; text-align:center; width:100%;">等待 Python 掃描器產出 stock_status.json...</div>`;
+        }
+    }
+
     async function loadDynamicGenes() {
         try {
             const response = await fetch('data/dynamic_config.json');
@@ -998,9 +1063,7 @@
                     card2.querySelector('div div:nth-child(2) strong').nextSibling.textContent = ` ${(config.DYN_2.risk * 100).toFixed(1)}%`;
                 }
             }
-        } catch (e) {
-            console.log("[GENE OPTIMIZER] 沿用底層系統基因預設值。");
-        }
+        } catch (e) { }
     }
 
     function initSettingsPersistence() {
@@ -1016,6 +1079,7 @@
     initSettingsPersistence();
     loadAllLedgers();
     loadDynamicGenes();
+    loadStockStatus(); // 載入標的戰況數據
     updateUIState();
     updateChartTimeframe('1D');
 </script>
