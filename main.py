@@ -6,6 +6,9 @@ from datetime import datetime
 import config
 from modules import fetcher, ml_brain, llm_brain, execution, notifier
 
+# 🌟 新增：全域標的狀態暫存字典
+GLOBAL_STOCK_STATUS = {}
+
 def get_group_params(group_id):
     """取得該宇宙的專屬參數 (若為 DYN 組且有 AI 設定檔，則覆寫)"""
     params = {
@@ -97,11 +100,9 @@ def get_universe_equity(group_id, market_prices):
             shares = buy_s - sell_s
             
             if shares > 0:
-                # 優先使用傳入的市價字典，確保估值與 LINE 戰報完全一致
                 if market_prices and t in market_prices and market_prices[t] is not None:
                     total_stock_value += shares * market_prices[t]
                 else:
-                    # 如果真的抓不到現價，才退回使用歷史買進成本
                     buy_records = t_df[t_df['Action']=='BUY']
                     if not buy_records.empty:
                         last_price = buy_records.iloc[-1]['Price']
@@ -115,7 +116,7 @@ def evaluate_strategy(ticker, df_data, ml_buy_signal, llm_signal, group_id):
     """進入特定宇宙，套用該宇宙的專屬戰略"""
     current_price = df_data['Close'].iloc[-1]
     curr_sma20 = df_data['SMA_20'].iloc[-1]
-    curr_atr = df_data['ATRr_14'].iloc[-1]
+    curr_atr = df_data['ATRr_14'].iloc[-1] if 'ATRr_14' in df_data.columns else 0
     
     params = get_group_params(group_id)
     risk_pct = params['risk']
@@ -127,6 +128,7 @@ def evaluate_strategy(ticker, df_data, ml_buy_signal, llm_signal, group_id):
     action_str = "觀望"
     reason_str = "-"
     should_notify = False
+    stop_price = 0  # 🌟 新增停損價格紀錄
     
     if current_shares > 0:
         stop_price = highest_price - (curr_atr * atr_mult)
@@ -178,7 +180,8 @@ def evaluate_strategy(ticker, df_data, ml_buy_signal, llm_signal, group_id):
                 reason_str = "剩餘現金不足"
 
     final_cash, final_shares, _ = get_ticker_ledger_status(ticker, group_id, df_data)
-    return action_str, reason_str, should_notify, final_cash, final_shares
+    # 🌟 回傳值新增 stop_price 與 curr_atr，供前端面板顯示
+    return action_str, reason_str, should_notify, final_cash, final_shares, stop_price, curr_atr
 
 def run_trading_bot_for_ticker(ticker, market_prices):
     print(f"\n 正在掃描標的: {ticker}...")
@@ -187,12 +190,25 @@ def run_trading_bot_for_ticker(ticker, market_prices):
     if df_data is None or df_data.empty:
         return 
         
-    current_price = df_data['Close'].iloc[-1]
-    # 動態將抓到的最新價格放進字典，給後面的資產估算引擎使用
+    current_price = float(df_data['Close'].iloc[-1])
     market_prices[ticker] = current_price 
     
     df_data = ml_brain.calculate_indicators(df_data)
     ml_buy_signal = ml_brain.check_buy_signal(df_data)
+    
+    # 🌟 擷取最新的 RSI 數值
+    curr_rsi = 50.0
+    for col in ['RSI_14', 'RSI', 'rsi']:
+        if col in df_data.columns:
+            curr_rsi = float(df_data[col].iloc[-1])
+            break
+            
+    # 建立這檔股票的狀態骨架
+    GLOBAL_STOCK_STATUS[ticker] = {
+        "price": current_price,
+        "rsi": curr_rsi,
+        "universes": {}
+    }
     
     llm_signal = True
     if ml_buy_signal:
@@ -205,10 +221,23 @@ def run_trading_bot_for_ticker(ticker, market_prices):
     any_notify = False
     
     for g in groups:
-        act, rsn, notif, cash, shares = evaluate_strategy(ticker, df_data, ml_buy_signal, llm_signal, g)
-        
-        # 帶入包含最新報價的字典，算出跟 LINE 戰報完全一致的數字
+        # 解包新增的回傳值
+        act, rsn, notif, cash, shares, stop_price, curr_atr = evaluate_strategy(ticker, df_data, ml_buy_signal, llm_signal, g)
         equity = get_universe_equity(g, market_prices)
+        
+        # 🌟 計算市值與預期可買入股數 (給前端監控面板使用)
+        stock_value = shares * current_price
+        buy_power = cash * get_group_params(g)['risk']
+        atr_m = get_group_params(g)['atr_mult']
+        est_buy_shares = int(buy_power / (curr_atr * atr_m)) if (curr_atr * atr_m) > 0 else 0
+        
+        GLOBAL_STOCK_STATUS[ticker]["universes"][g] = {
+            "shares": int(shares),
+            "value": float(stock_value),
+            "stop_price": float(stop_price),
+            "est_buy_shares": int(est_buy_shares),
+            "action": act
+        }
         
         results[g] = {"act": act, "rsn": rsn, "cash": cash, "shares": shares, "equity": equity}
         if notif: any_notify = True
@@ -249,7 +278,6 @@ def run_trading_bot_for_ticker(ticker, market_prices):
         print(f"✅ {ticker} 4D 戰情報告已傳送至 LINE！")
 
 def record_nav_snapshot(market_prices):
-    """記錄 4 個宇宙當下的淨值快照，並匯出為前端可讀的 JS 檔"""
     nav_csv_path = "data/nav_history.csv"
     nav_js_path = "data/nav_data.js"
     
@@ -264,7 +292,6 @@ def record_nav_snapshot(market_prices):
     navs = []
     
     for g in ["DYN_1", "DYN_2", "STA_1", "STA_2"]:
-        # 使用最新的全局市價字典，產生真正的 MTM 浮動淨值
         nav = get_universe_equity(g, market_prices) 
         navs.append(nav)
         
@@ -306,7 +333,6 @@ def main_market_scan():
     try:
         watchlist = getattr(config, 'WATCHLIST', [])
         
-        # 🏆 核心修正：在掃描前先建立一個「市價字典」
         market_prices = {}
         print("🔄 正在預載全市場即時報價，以確保淨值 (NAV) 估算精準...")
         for ticker in watchlist:
@@ -318,13 +344,19 @@ def main_market_scan():
                 pass
         
         for ticker in watchlist:
-            # 傳遞這個字典，讓它在每跑一檔股票時都能用最新價格
             run_trading_bot_for_ticker(ticker, market_prices)
             time.sleep(2)
             
-        # 掃描結束，傳入全局字典拍下最終快照！
         record_nav_snapshot(market_prices)
         print(f"📸 宇宙淨值快照已儲存，成功同步至前端戰情室！")
+        
+        # 🌟 將所有標的的即時戰況匯出為 JSON，供前端讀取
+        try:
+            with open("data/stock_status.json", "w", encoding="utf-8") as f:
+                json.dump(GLOBAL_STOCK_STATUS, f, ensure_ascii=False, indent=4)
+            print(f"📡 標的戰況數據已匯出至 data/stock_status.json！")
+        except Exception as e:
+            print(f"⚠️ 標的戰況匯出失敗: {e}")
             
         print(f"[{datetime.now().strftime('%H:%M:%S')}] ✅ 本次全市場矩陣掃描完畢。")
     except Exception as e:
