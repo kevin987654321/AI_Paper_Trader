@@ -1,0 +1,8 @@
+{
+    "DYN_1_ATR": 3.0,
+    "DYN_1_RISK": 0.03,
+    "REASON_DYN_1": "樣本不足，維持原樣",
+    "DYN_2_ATR": 2.0,
+    "DYN_2_RISK": 0.02,
+    "REASON_DYN_2": "樣本不足，維持原樣"
+}
