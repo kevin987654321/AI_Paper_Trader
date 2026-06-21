@@ -36,8 +36,13 @@ jobs:
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action Bot"
           
-          # 專門追蹤 AI 教練寫入的新參數檔
+          # 追蹤 AI 教練寫入的新參數檔
           git add dynamic_config.json || true
           
-          git diff --quiet && git diff --staged --quiet || git commit -m "🧬 AI 進化完畢：套用新交易參數"
-          git push
+          # 檢查是否有未提交的變更，如果有才執行 commit 與 push
+          if ! git diff --staged --quiet; then
+            git commit -m "🧬 AI 進化完畢：套用新交易參數"
+            git push
+          else
+            echo "沒有任何參數改變，略過提交。"
+          fi
