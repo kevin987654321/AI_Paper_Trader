@@ -6,13 +6,13 @@ import re
 from datetime import datetime
 import config
 
-def analyze_ledger():
-    """讀取帳本，計算基礎績效指標，準備餵給 Gemini"""
-    if not os.path.exists(config.LEDGER_PATH):
+def analyze_ledger(ledger_path):
+    """讀取指定的帳本路徑，計算基礎績效指標"""
+    if not os.path.exists(ledger_path):
         return None
 
     try:
-        df = pd.read_csv(config.LEDGER_PATH)
+        df = pd.read_csv(ledger_path)
         sell_records = df[df['Action'] == 'SELL']
 
         if len(sell_records) == 0:
@@ -22,95 +22,136 @@ def analyze_ledger():
         initial_cash = config.INITIAL_CAPITAL
         current_cash = df.iloc[-1]['Cash_Left']
         roi = ((current_cash - initial_cash) / initial_cash) * 100
-        
         total_trades = len(sell_records)
         
-        # 簡單的績效摘要
         report = f"""
         - 初始資金: {initial_cash:,.0f} 元
         - 目前現金: {current_cash:,.0f} 元
         - 總報酬率 (ROI): {roi:.2f}%
-        - 總共完成交易: {total_trades} 筆 (包含停損、停利與動能轉弱賣出)
+        - 總共完成交易: {total_trades} 筆
         """
         return report
         
     except Exception as e:
-        print(f"分析帳本失敗: {e}")
+        print(f"分析帳本 {ledger_path} 失敗: {e}")
         return None
 
-def run_evolution():
-    """呼叫 Gemini 進行反思，並輸出新參數"""
-    print(f"[{datetime.now().strftime('%H:%M:%S')}] 🧬 啟動系統自我進化與反思機制...")
-    
-    performance_data = analyze_ledger()
+def evolve_universe(universe_name, performance_data, current_atr, current_risk, atr_range, risk_range):
+    """呼叫 Gemini 進行單一宇宙的反思，並回傳新參數的字典"""
     if not performance_data or "無法計算" in performance_data:
-        print("⚠️ 交易樣本不足，AI 決定本週維持原設定，暫不進化。")
-        return
+        print(f"⚠️ {universe_name} 交易樣本不足，本週維持原設定。")
+        return {
+            f"{universe_name}_ATR": current_atr, 
+            f"{universe_name}_RISK": current_risk,
+            f"REASON_{universe_name}": "樣本不足，維持原樣"
+        }
 
-    # 建立系統提示詞 (Prompt)
     prompt = f"""
     你現在是一位頂尖的量化交易策略大師。
-    我們的交易系統目前使用以下參數：
-    - 停損比例 (STOP_LOSS_PCT): {config.STOP_LOSS_PCT}
-    - 停利比例 (TAKE_PROFIT_PCT): {config.TAKE_PROFIT_PCT}
-    - 單筆資金風險比例 (RISK_PER_TRADE): {config.RISK_PER_TRADE}
+    正在負責優化「{universe_name}」宇宙的交易策略。
+    目前的參數設定如下：
+    - ATR停損倍數 ({universe_name}_ATR): {current_atr}
+    - 單筆資金風險比例 ({universe_name}_RISK): {current_risk}
 
     近期的真實交易績效結算如下：
     {performance_data}
 
     任務：
-    請根據上述的「總報酬率」判斷是否需要微調參數。
-    - 如果嚴重虧損：代表停損可能太寬（賠太多）或停利太難達到，請建議縮小數值。
-    - 如果穩定獲利：可以考慮保持原樣，或者稍微放大風險比例來擴大獲利。
-    - 參數合理範圍：停損 0.02~0.08，停利 0.05~0.20，風險 0.01~0.05。
+    請根據「總報酬率」判斷是否需要微調參數。
+    - 參數合理範圍：ATR倍數介於 {atr_range}，風險介於 {risk_range}。
+    - 若嚴重虧損：縮小風險或降低 ATR 容忍度。
+    - 若穩定獲利：可微調放大參數以擴大獲利，或保持現狀。
     
     請以嚴格的 JSON 格式回覆。絕對不要包含任何 Markdown 標籤 (例如 ```json )，直接輸出 JSON 字串。
     必須包含以下格式：
     {{
-        "STOP_LOSS_PCT": (填入你的建議浮點數),
-        "TAKE_PROFIT_PCT": (填入你的建議浮點數),
-        "RISK_PER_TRADE": (填入你的建議浮點數),
-        "REASON": "(繁體中文，100字內解釋你為什麼這樣調整)"
+        "{universe_name}_ATR": (填入建議浮點數),
+        "{universe_name}_RISK": (填入建議浮點數),
+        "REASON_{universe_name}": "(繁體中文，50字內解釋調整原因)"
     }}
     """
 
     try:
-        print("🤔 AI 教練正在閱讀帳本並思考新戰略，請稍候...")
-        
-        # 🌟 換成 2026 最新版 Client 呼叫語法
+        print(f"🤔 AI 正在思考 {universe_name} 的新戰略...")
         client = genai.Client(api_key=config.GEMINI_API_KEY)
         response = client.models.generate_content(
             model='gemini-3.5-flash',
             contents=prompt
         )
         
+        # 暴力清理 Markdown 標籤
         result_text = response.text.strip()
-        
-        # 暴力清理 LLM 常常不小心加上去的 Markdown 程式碼區塊符號
         result_text = re.sub(r'^```json', '', result_text, flags=re.IGNORECASE)
         result_text = re.sub(r'^```', '', result_text)
         result_text = re.sub(r'```$', '', result_text).strip()
 
-        # 解析 JSON
-        new_params = json.loads(result_text)
+        return json.loads(result_text)
         
-        # 將新參數存入 dynamic_config.json
-        with open("dynamic_config.json", "w", encoding="utf-8") as f:
-            json.dump(new_params, f, indent=4, ensure_ascii=False)
-            
-        print(f"\n✅ 進化成功！新參數已寫入 dynamic_config.json")
-        print("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
-        print(f"📊 新停損: {new_params['STOP_LOSS_PCT']*100}%")
-        print(f"🎯 新停利: {new_params['TAKE_PROFIT_PCT']*100}%")
-        print(f"💰 新風險: {new_params['RISK_PER_TRADE']*100}%")
-        print(f"💡 AI 教練評語: {new_params['REASON']}")
-        print("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
-        print("下一次啟動 main.py 時，系統將自動套用這組新戰略！")
-        
-    except json.JSONDecodeError:
-        print(f"⚠️ 進化失敗：AI 回傳的格式不是標準 JSON。原始回覆內容：\n{result_text}")
     except Exception as e:
-        print(f"⚠️ 進化過程發生預期外錯誤: {e}")
+        print(f"⚠️ {universe_name} 進化過程發生預期外錯誤: {e}")
+        # 若發生錯誤，回傳原始設定以保證系統能繼續運行
+        return {
+            f"{universe_name}_ATR": current_atr, 
+            f"{universe_name}_RISK": current_risk,
+            f"REASON_{universe_name}": "進化失敗，觸發防護機制維持原設定"
+        }
+
+def run_evolution():
+    """執行雙重動態宇宙的進化流程"""
+    print(f"\n[{datetime.now().strftime('%H:%M:%S')}] 🧬 啟動雙重動態宇宙自我進化機制...")
+    
+    final_dynamic_config = {}
+
+    # ==========================================
+    # 🚀 1. 處理 DYN_1 (動態積極組)
+    # ==========================================
+    print("\n[讀取] DYN_1 動態積極組帳本...")
+    perf_dyn_1 = analyze_ledger(config.LEDGER_DYN_1)
+    
+    # 積極組允許較大的 ATR 容忍度與風險
+    params_dyn_1 = evolve_universe(
+        universe_name="DYN_1",
+        performance_data=perf_dyn_1,
+        current_atr=config.DYN_1_ATR,
+        current_risk=config.DYN_1_RISK,
+        atr_range="2.5 ~ 4.0", 
+        risk_range="0.02 ~ 0.05"
+    )
+    final_dynamic_config.update(params_dyn_1)
+
+    # ==========================================
+    # 🛡️ 2. 處理 DYN_2 (動態穩健組)
+    # ==========================================
+    print("\n[讀取] DYN_2 動態穩健組帳本...")
+    perf_dyn_2 = analyze_ledger(config.LEDGER_DYN_2)
+    
+    # 穩健組嚴格限制防禦力，破線快跑
+    params_dyn_2 = evolve_universe(
+        universe_name="DYN_2",
+        performance_data=perf_dyn_2,
+        current_atr=config.DYN_2_ATR,
+        current_risk=config.DYN_2_RISK,
+        atr_range="1.5 ~ 2.5", 
+        risk_range="0.01 ~ 0.02"
+    )
+    final_dynamic_config.update(params_dyn_2)
+
+    # ==========================================
+    # 💾 3. 合併結果並寫入檔案
+    # ==========================================
+    with open("dynamic_config.json", "w", encoding="utf-8") as f:
+        json.dump(final_dynamic_config, f, indent=4, ensure_ascii=False)
+        
+    print(f"\n✅ 進化完成！全新基因已注入 dynamic_config.json")
+    print("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
+    print("🚀 [DYN_1 動態積極組]")
+    print(f"   📈 新 ATR: {final_dynamic_config.get('DYN_1_ATR')} | 💰 新風險: {final_dynamic_config.get('DYN_1_RISK')}")
+    print(f"   💡 評語: {final_dynamic_config.get('REASON_DYN_1')}")
+    print("────────────────────────────────")
+    print("🛡️ [DYN_2 動態穩健組]")
+    print(f"   📉 新 ATR: {final_dynamic_config.get('DYN_2_ATR')} | 💰 新風險: {final_dynamic_config.get('DYN_2_RISK')}")
+    print(f"   💡 評語: {final_dynamic_config.get('REASON_DYN_2')}")
+    print("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
 
 if __name__ == "__main__":
     run_evolution()
