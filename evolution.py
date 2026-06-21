@@ -137,20 +137,40 @@ def run_evolution():
     final_dynamic_config.update(params_dyn_2)
 
     # ==========================================
-    # 💾 3. 合併結果並寫入檔案
+    # 💾 3. 合併結果並寫入檔案（保留最新設定 + 追加歷史日誌）
     # ==========================================
+    # 1. 依舊寫入最新的設定檔給 main.py 讀取
     with open("dynamic_config.json", "w", encoding="utf-8") as f:
         json.dump(final_dynamic_config, f, indent=4, ensure_ascii=False)
         
+    # 2. 🌟 新增：將本次進化紀錄追加到獨立的歷史日誌檔中
+    log_path = "data/evolution_history_log.txt"
+    os.makedirs("data", exist_ok=True)
+    
+    now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    with open(log_path, "a", encoding="utf-8") as f:  # 使用 "a" 模式追加紀錄，不覆寫
+        f.write("==================================================\n")
+        f.write(f"🕒 矩陣進化時間: {now_str}\n")
+        f.write("--------------------------------------------------\n")
+        f.write("🚀 [DYN_1 動態積極組]\n")
+        f.write(f"  - 新 ATR: {final_dynamic_config.get('DYN_1_ATR')} | 新風險: {final_dynamic_config.get('DYN_1_RISK')}\n")
+        f.write(f"  - 💡 AI 評語: {final_dynamic_config.get('REASON_DYN_1')}\n")
+        f.write("--------------------------------------------------\n")
+        f.write("🛡️ [DYN_2 動態穩健組]\n")
+        f.write(f"  - 新 ATR: {final_dynamic_config.get('DYN_2_ATR')} | 新風險: {final_dynamic_config.get('DYN_2_RISK')}\n")
+        f.write(f"  - 💡 AI 評語: {final_dynamic_config.get('REASON_DYN_2')}\n")
+        f.write("==================================================\n\n")
+        
     print(f"\n✅ 進化完成！全新基因已注入 dynamic_config.json")
+    print(f"📜 歷史戰略反思軌跡已同步追加至 {log_path}")
     print("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
     print("🚀 [DYN_1 動態積極組]")
-    print(f"   📈 新 ATR: {final_dynamic_config.get('DYN_1_ATR')} | 💰 新風險: {final_dynamic_config.get('DYN_1_RISK')}")
-    print(f"   💡 評語: {final_dynamic_config.get('REASON_DYN_1')}")
+    print(f"    📈 新 ATR: {final_dynamic_config.get('DYN_1_ATR')} | 💰 新風險: {final_dynamic_config.get('DYN_1_RISK')}")
+    print(f"    💡 評語: {final_dynamic_config.get('REASON_DYN_1')}")
     print("────────────────────────────────")
     print("🛡️ [DYN_2 動態穩健組]")
-    print(f"   📉 新 ATR: {final_dynamic_config.get('DYN_2_ATR')} | 💰 新風險: {final_dynamic_config.get('DYN_2_RISK')}")
-    print(f"   💡 評語: {final_dynamic_config.get('REASON_DYN_2')}")
+    print(f"    📉 新 ATR: {final_dynamic_config.get('DYN_2_ATR')} | 💰 新風險: {final_dynamic_config.get('DYN_2_RISK')}")
+    print(f"    💡 評語: {final_dynamic_config.get('REASON_DYN_2')}")
     print("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
 
 if __name__ == "__main__":
