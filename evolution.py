@@ -47,14 +47,6 @@ def run_evolution():
         print("⚠️ 交易樣本不足，AI 決定本週維持原設定，暫不進化。")
         return
 
-    # 設定 Gemini 金鑰
-    client = genai.Client(api_key=config.GEMINI_API_KEY)
-
-    response = client.models.generate_content(
-        model='gemini-3.5-flash',
-        contents=prompt
-    )
-
     # 建立系統提示詞 (Prompt)
     prompt = f"""
     你現在是一位頂尖的量化交易策略大師。
