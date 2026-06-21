@@ -1,5 +1,5 @@
 import pandas as pd
-import google.generativeai as genai
+from google import genai
 import json
 import os
 import re
@@ -48,8 +48,12 @@ def run_evolution():
         return
 
     # 設定 Gemini 金鑰
-    genai.configure(api_key=config.GEMINI_API_KEY)
-    model = genai.GenerativeModel('gemini-3.5-flash')
+    client = genai.Client(api_key=config.GEMINI_API_KEY)
+
+    response = client.models.generate_content(
+        model='gemini-3.5-flash',
+        contents=prompt
+    )
 
     # 建立系統提示詞 (Prompt)
     prompt = f"""
