@@ -36,13 +36,16 @@ jobs:
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action Bot"
           
-          # 追蹤 AI 教練寫入的新參數檔
+          # 🌟 追蹤 AI 教練寫入的新參數檔
           git add dynamic_config.json || true
+          
+          # 🌟 強制追蹤並打包「進化歷史日誌」 (加上 -f 防止被 .gitignore 意外擋住)
+          git add -f data/evolution_history_log.txt || true
           
           # 檢查是否有未提交的變更，如果有才執行 commit 與 push
           if ! git diff --staged --quiet; then
-            git commit -m "🧬 AI 進化完畢：套用新交易參數"
+            git commit -m "🧬 AI 進化完畢：套用新交易參數與保存歷史日誌"
             git push
           else
-            echo "沒有任何參數改變，略過提交。"
+            echo "沒有任何參數改變與新日誌，略過提交。"
           fi
