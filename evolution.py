@@ -84,7 +84,14 @@ def run_evolution():
 
     try:
         print("🤔 AI 教練正在閱讀帳本並思考新戰略，請稍候...")
-        response = model.generate_content(prompt)
+        
+        # 🌟 換成 2026 最新版 Client 呼叫語法
+        client = genai.Client(api_key=config.GEMINI_API_KEY)
+        response = client.models.generate_content(
+            model='gemini-3.5-flash',
+            contents=prompt
+        )
+        
         result_text = response.text.strip()
         
         # 暴力清理 LLM 常常不小心加上去的 Markdown 程式碼區塊符號
