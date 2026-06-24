@@ -15,21 +15,24 @@ def analyze_ledger(ledger_path):
         df = pd.read_csv(ledger_path)
         sell_records = df[df['Action'] == 'SELL']
 
-        if len(sell_records) == 0:
-            return "目前還沒有賣出紀錄（皆為持倉或空手），無法計算實際損益勝率。"
-
         # 計算目前的投資報酬率 (ROI)
         initial_cash = config.INITIAL_CAPITAL
         current_cash = df.iloc[-1]['Cash_Left']
         roi = ((current_cash - initial_cash) / initial_cash) * 100
         total_trades = len(sell_records)
         
+        # 🌟 移除「沒有 SELL 紀錄就中斷」的限制，改為生成資產現況報告讓 AI 進行評估
         report = f"""
         - 初始資金: {initial_cash:,.0f} 元
         - 目前現金: {current_cash:,.0f} 元
         - 總報酬率 (ROI): {roi:.2f}%
-        - 總共完成交易: {total_trades} 筆
         """
+        
+        if total_trades > 0:
+            report += f"        - 總共完成結清交易: {total_trades} 筆\n"
+        else:
+            report += "        - 當前戰況提示: 目前暫無平倉賣出紀錄，所有資金皆在現金部位或持股波段未實現狀態。\n"
+            
         return report
         
     except Exception as e:
