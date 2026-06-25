@@ -104,7 +104,7 @@
         .chart-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; flex-shrink: 0; }
         .chart-wrapper { flex: 1; min-height: 0; position: relative; }
         
-        /* 🌟 新增：時間軸彈性浮動選擇器 (Jelly Pill) */
+        /* 時間軸彈性浮動選擇器 (Jelly Pill) */
         .timeframe-selector { position: relative; display: flex; gap: 4px; background: rgba(0,0,0,0.4); padding: 3px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.03); overflow: hidden; touch-action: pan-y; }
         .tf-active-bg { position: absolute; top: 3px; bottom: 3px; left: 0; background: rgba(255,255,255,0.12); border-radius: 4px; transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), width 0.3s cubic-bezier(0.4, 0, 0.2, 1); z-index: 1; }
         .tf-btn { position: relative; z-index: 2; background: transparent; border: none; color: #555; padding: 5px 12px; border-radius: 4px; cursor: pointer; font-size: 11px; transition: color 0.2s; font-weight: bold; }
@@ -165,7 +165,7 @@
         .stock-u-row { display: flex; justify-content: space-between; padding: 10px; background: rgba(0,0,0,0.3); border-radius: 6px; border-left: 3px solid transparent; }
 
         .settings-list { max-width: 600px; margin: 0 auto; display: flex; flex-direction: column; gap: 15px; padding-top: 40px; width: 100%; }
-        .setting-item { display: flex; justify-content: space-between; align-items: center; padding: 20px; }
+        .setting-item { display: flex; justify-content: space-between; align-items: center; padding: 20px; transition: opacity 0.3s; }
         .switch { position: relative; display: inline-block; width: 44px; height: 24px; }
         .switch input { opacity: 0; width: 0; height: 0; }
         .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: rgba(255,255,255,0.1); transition: .4s; border-radius: 24px; }
@@ -173,11 +173,24 @@
         input:checked + .slider { background-color: var(--color-dyn1); box-shadow: 0 0 10px var(--color-dyn1); }
         input:checked + .slider:before { transform: translateX(20px); background-color: #000; }
 
-        /* 🌟 新增：設定頁面的果凍滑桿 */
-        .jelly-slider { -webkit-appearance: none; width: 100%; height: 6px; border-radius: 4px; background: rgba(255,255,255,0.1); outline: none; transition: .2s; }
-        .jelly-slider::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 18px; height: 18px; border-radius: 50%; background: var(--color-dyn2); cursor: pointer; box-shadow: 0 0 10px var(--color-dyn2); transition: transform 0.1s cubic-bezier(0.4, 0, 0.2, 1); }
-        .jelly-slider::-webkit-slider-thumb:active { transform: scale(1.3, 0.7); }
-        .jelly-input { width: 45px; background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.1); color: #fff; padding: 4px; border-radius: 6px; text-align: center; font-family: monospace; font-size: 13px; transition: border-color 0.3s; }
+        /* 🌟 帶間隔的設定分隔線 */
+        .settings-divider { height: 1px; background: rgba(255,255,255,0.06); margin: 5px 15px 15px 15px; }
+
+        /* 🌟 極致果凍物理滑桿 (Jelly Slider) */
+        .jelly-slider { 
+            -webkit-appearance: none; width: 100%; height: 8px; border-radius: 4px; 
+            background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.1); 
+            backdrop-filter: blur(5px); outline: none; transition: .2s; 
+            --thumb-stretch: 1; --thumb-origin: center; --thumb-trans: transform 0.6s cubic-bezier(0.4, 2.5, 0.4, 1);
+        }
+        .jelly-slider::-webkit-slider-thumb { 
+            -webkit-appearance: none; appearance: none; width: 22px; height: 22px; border-radius: 50%; 
+            background: rgba(220, 220, 220, 0.95); backdrop-filter: blur(5px); border: 1px solid rgba(255,255,255,0.5);
+            cursor: pointer; box-shadow: 0 2px 10px rgba(0,0,0,0.6); 
+            transform: scaleX(var(--thumb-stretch)); transform-origin: var(--thumb-origin); 
+            transition: var(--thumb-trans); 
+        }
+        .jelly-input { width: 48px; background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.1); color: #fff; padding: 4px; border-radius: 6px; text-align: center; font-family: monospace; font-size: 13px; transition: border-color 0.3s; }
         .jelly-input:focus { outline: none; border-color: var(--color-dyn2); }
 
         /* 高質感霧化背景 + 頂端跟手下拉彈窗 */
@@ -219,7 +232,7 @@
             }
             .mobile-menu-btn {
                 background: transparent; border: none; color: #fff; font-size: 20px; cursor: pointer; padding: 10px; margin-left: -10px;
-                z-index: 2;
+                z-index: 2; 
             }
             .mobile-header-title {
                 position: absolute; left: 50%; transform: translateX(-50%);
@@ -392,6 +405,7 @@
     <main id="view-settings" class="view-section">
         <h2 style="margin: 0; font-size: 18px; letter-spacing: 2px; text-align: center;"><i class="fa-solid fa-gear"></i> 系統底層設定</h2>
         <div class="settings-list">
+            
             <div class="glass-panel setting-item">
                 <div>
                     <div style="font-weight: bold; color: #fff;">圖表節點顯示</div>
@@ -399,7 +413,8 @@
                 </div>
                 <label class="switch"><input type="checkbox" id="setting-nodes-show" checked><span class="slider"></span></label>
             </div>
-            <div class="glass-panel setting-item">
+            
+            <div class="glass-panel setting-item" id="node-limit-container">
                 <div>
                     <div style="font-weight: bold; color: #fff;">節點顯示上限</div>
                     <div style="font-size: 12px; color: #777; margin-top: 4px;">過濾平緩區間，僅保留關鍵轉折。</div>
@@ -409,6 +424,8 @@
                     <input type="text" id="setting-nodes-input" class="jelly-input">
                 </div>
             </div>
+            
+            <div class="settings-divider"></div>
             
             <div class="glass-panel setting-item">
                 <div>
@@ -445,11 +462,15 @@
 
 <script>
     /* =========================================
-       0. 節點設定初始化 (優先執行以備圖表繪製)
+       0. 節點設定初始化 (優先執行)
        ========================================= */
     const isMobileDevice = window.innerWidth <= 768;
     let showChartNodes = localStorage.getItem('SETTING_SHOW_NODES') !== 'false';
     let maxChartNodes = localStorage.getItem('SETTING_MAX_NODES') || (isMobileDevice ? 30 : 60);
+    
+    // 🌟 全局預覽狀態鎖
+    let isChartInteractionActive = false;
+    let canvasTouchStart = 0;
 
     /* =========================================
        1. 數據橋接核心與真實時間戳記轉化
@@ -492,13 +513,13 @@
     document.getElementById('val-sta1').innerText = "$ " + s1[s1.length - 1].toLocaleString(undefined, {maximumFractionDigits: 0});
     document.getElementById('val-sta2').innerText = "$ " + s2[s2.length - 1].toLocaleString(undefined, {maximumFractionDigits: 0});
 
-    // 🌟 AI 智慧節點權重過濾器
+    // 🌟 AI 智慧節點權重過濾器：優先剔除平緩區間，保留起落轉折
     function calculatePointRadii(datasetData) {
         if (!showChartNodes) return datasetData.map(() => 0);
         if (maxChartNodes === 'All') return datasetData.map(() => 3);
 
         let n = parseInt(maxChartNodes);
-        if (isNaN(n) || n < 2) n = 2; // 至少保留頭尾
+        if (isNaN(n) || n < 2) n = 2;
 
         let len = datasetData.length;
         if (len <= n) return datasetData.map(() => 3);
@@ -508,28 +529,25 @@
 
         for (let i = 0; i < len; i++) {
             if (i === 0 || i === len - 1) {
-                importance.push({ i, val: Infinity }); // 強制保留起點與終點
+                importance.push({ i, val: Infinity }); // 強制保留頭尾
             } else {
                 let diffPrev = Math.abs(datasetData[i] - datasetData[i-1]);
                 let diffNext = Math.abs(datasetData[i] - datasetData[i+1]);
                 if (diffPrev === 0 && diffNext === 0) {
-                    importance.push({ i, val: -1 }); // 剔除平緩無變動區間
+                    importance.push({ i, val: -1 }); // 直接淘汰無波動死水區
                 } else {
-                    importance.push({ i, val: diffPrev + diffNext }); // 依轉折幅度排定優先權
+                    importance.push({ i, val: diffPrev + diffNext }); // 依轉折劇烈度排定優先權
                 }
             }
         }
 
-        // 依重要性降冪排序，選取前 n 個名額
         importance.sort((a, b) => b.val - a.val);
         for (let k = 0; k < n; k++) {
             radii[importance[k].i] = 3;
         }
-
         return radii;
     }
 
-    // 更新圖表與時間軸過濾
     function updateChartTimeframe(tf) {
         currentGlobalTimeframe = tf || currentGlobalTimeframe;
         if (typeof NAV_HISTORY === 'undefined' || !NAV_HISTORY.labels) return;
@@ -590,7 +608,7 @@
         mainChart.data.datasets[3].data = data4;
         mainChart.data.datasets[3].pointRadius = calculatePointRadii(data4);
 
-        mainChart.update();
+        mainChart.update('none'); // 無痕更新避免閃爍
     }
 
     /* =========================================
@@ -678,7 +696,7 @@
             }
         });
         allU.forEach((u, idx) => mainChart.setDatasetVisibility(idx, selectedUniverses.includes(u)));
-        mainChart.update();
+        mainChart.update('none');
 
         const commander = document.getElementById('ai-commander');
         const input = document.getElementById('chat-input');
@@ -701,7 +719,7 @@
     }
 
     /* =========================================
-       4. Chart.js 初始化與手勢優化
+       4. Chart.js 🌟 全終端長按預覽與短按詳情
        ========================================= */
     const chartData = {
         labels: chartLabels,
@@ -714,26 +732,49 @@
     };
 
     const canvasEl = document.getElementById('mainChart');
-    let canvasTouchStart = 0;
     
-    canvasEl.addEventListener('touchstart', (e) => {
+    // 監聽互動狀態，作為 Tooltip 的總開關
+    function startInteraction() {
         canvasTouchStart = Date.now();
-    }, {passive: true});
+        isChartInteractionActive = true;
+        mainChart.update('none');
+    }
+    function endInteraction() {
+        if(isChartInteractionActive) {
+            setTimeout(() => {
+                isChartInteractionActive = false;
+                mainChart.update('none');
+            }, 50); // 微延遲確保 click 事件能成功擊發
+        }
+    }
+
+    canvasEl.addEventListener('mousedown', startInteraction);
+    canvasEl.addEventListener('touchstart', startInteraction, {passive: true});
+    window.addEventListener('mouseup', endInteraction);
+    window.addEventListener('touchend', endInteraction);
+    window.addEventListener('touchcancel', endInteraction);
 
     const mainChart = new Chart(canvasEl.getContext('2d'), {
         type: 'line', data: chartData,
         options: {
             responsive: true, maintainAspectRatio: false,
             interaction: { mode: 'index', intersect: false },
-            plugins: { legend: { display: false }, tooltip: { backgroundColor: 'rgba(0,0,0,0.8)', titleColor: '#fff', padding: 12 } },
+            plugins: { 
+                legend: { display: false }, 
+                tooltip: { 
+                    backgroundColor: 'rgba(0,0,0,0.8)', titleColor: '#fff', padding: 12,
+                    // 🌟 核心過濾器：只有按住滑鼠或螢幕時才放行 Tooltip 渲染
+                    filter: function() { return isChartInteractionActive; }
+                } 
+            },
             scales: {
                 y: { grid: { color: 'rgba(255,255,255,0.03)' }, ticks: { color: '#666' } },
                 x: { grid: { display: false }, ticks: { color: '#666', maxRotation: 0, autoSkip: true, font: { size: 10 } } }
             },
             onClick: (e, elements) => {
-                if (isMobileDevice && Date.now() - canvasTouchStart > 300) {
-                    return; 
-                }
+                // 🌟 短按判定：超過 300 毫秒視為長按預覽，不彈出詳情
+                if (Date.now() - canvasTouchStart > 300) return; 
+                
                 const activePoints = mainChart.getElementsAtEventForMode(e, 'nearest', { intersect: true }, false);
                 if (activePoints.length > 0) {
                     const dsIndex = activePoints[0].datasetIndex;
@@ -742,15 +783,6 @@
                     showPointDetail(ds.label, ds.borderColor, mainChart.data.labels[dataIndex], ds.data[dataIndex]);
                 }
             }
-        }
-    });
-
-    canvasEl.addEventListener('touchend', () => {
-        if (isMobileDevice) {
-            setTimeout(() => {
-                mainChart.tooltip.setActiveElements([], {x:0, y:0});
-                mainChart.update();
-            }, 50);
         }
     });
 
@@ -775,7 +807,7 @@
             tfBg.style.transition = 'transform 0.4s cubic-bezier(0.25, 1.5, 0.5, 1), width 0.3s cubic-bezier(0.4, 0, 0.2, 1)';
         }
         tfBg.style.width = btn.offsetWidth + 'px';
-        tfBg.style.transform = `translateX(${btn.offsetLeft - 3}px)`; // 扣除 padding 補償
+        tfBg.style.transform = `translateX(${btn.offsetLeft}px)`; // 🌟 精準貼齊，消除誤差
     }
 
     tfBtns.forEach((btn, index) => {
@@ -788,12 +820,12 @@
         });
     });
 
-    // 觸控果凍滑動邏輯
+    // 手機版滑動果凍磁吸邏輯
     tfGroup.addEventListener('touchstart', (e) => {
         if(!isMobileDevice) return;
         tfIsDragging = true;
         tfStartX = e.touches[0].clientX;
-        initialBgLeft = tfBtns[activeTfIndex].offsetLeft - 3;
+        initialBgLeft = tfBtns[activeTfIndex].offsetLeft;
         tfBg.style.transition = 'none';
     }, {passive: true});
 
@@ -802,7 +834,7 @@
         tfCurrentX = e.touches[0].clientX;
         let diff = tfCurrentX - tfStartX;
         
-        if (Math.abs(diff) > 5 && e.cancelable) e.preventDefault(); // 阻止上下滾動
+        if (Math.abs(diff) > 5 && e.cancelable) e.preventDefault(); 
         
         let stretch = 1 + Math.abs(diff) * 0.002;
         let moveX = initialBgLeft + diff * 0.8; 
@@ -822,7 +854,7 @@
         let closestIndex = activeTfIndex;
         
         tfBtns.forEach((btn, index) => {
-            let btnCenter = btn.offsetLeft - 3 + (btn.offsetWidth / 2);
+            let btnCenter = btn.offsetLeft + (btn.offsetWidth / 2);
             let d = Math.abs(centerPos - btnCenter);
             if(d < minDiff) {
                 minDiff = d;
@@ -839,7 +871,6 @@
         tfCurrentX = 0;
     });
 
-    // 初始化 Pill 位置
     setTimeout(() => { updateTfBg(0, false); }, 100);
 
     /* =========================================
@@ -1279,8 +1310,9 @@
         const toggleShowNodes = document.getElementById('setting-nodes-show');
         const sliderMaxNodes = document.getElementById('setting-nodes-max');
         const inputMaxNodes = document.getElementById('setting-nodes-input');
+        const jellySlider = document.getElementById('setting-nodes-max');
 
-        // 綁定 UI 初始狀態
+        // 初始化 UI 狀態
         toggleShowNodes.checked = showChartNodes;
         if (maxChartNodes === 'All') {
             sliderMaxNodes.value = 201;
@@ -1290,7 +1322,22 @@
             inputMaxNodes.value = maxChartNodes;
         }
 
-        // 獨立邏輯處理器：確保滑動與輸入連動
+        // 🌟 節點設定鎖定機制
+        function updateNodeSettingsState() {
+            const container = document.getElementById('node-limit-container');
+            if (!showChartNodes) {
+                container.style.opacity = '0.3';
+                container.style.pointerEvents = 'none';
+                jellySlider.disabled = true;
+                inputMaxNodes.disabled = true;
+            } else {
+                container.style.opacity = '1';
+                container.style.pointerEvents = 'auto';
+                jellySlider.disabled = false;
+                inputMaxNodes.disabled = false;
+            }
+        }
+
         function updateNodeLimitUI(val) {
             if (val === 'All' || val >= 201) {
                 sliderMaxNodes.value = 201;
@@ -1317,10 +1364,13 @@
         toggleShowNodes.addEventListener('change', (e) => {
             showChartNodes = e.target.checked;
             localStorage.setItem('SETTING_SHOW_NODES', showChartNodes);
+            updateNodeSettingsState();
             updateChartTimeframe();
         });
 
-        // 其它原有開關設定
+        updateNodeSettingsState();
+
+        // 原有設定綁定
         const switches = document.querySelectorAll('.setting-item input[type="checkbox"]:not(#setting-nodes-show)');
         switches.forEach((sw, idx) => {
             const storageKey = `CORE_SETTING_VAL_${idx}`;
@@ -1328,6 +1378,43 @@
             if (savedState !== null) sw.checked = savedState === 'true';
             sw.addEventListener('change', () => localStorage.setItem(storageKey, sw.checked));
         });
+
+        // 🌟 果凍物理滑桿互動監聽器
+        let isSlidingJelly = false;
+        let lastJellyX = 0;
+
+        function startJelly(e) {
+            if(jellySlider.disabled) return;
+            isSlidingJelly = true;
+            lastJellyX = e.type.includes('mouse') ? e.clientX : e.touches[0].clientX;
+            jellySlider.style.setProperty('--thumb-trans', 'none');
+        }
+
+        function moveJelly(e) {
+            if(!isSlidingJelly) return;
+            let currentX = e.type.includes('mouse') ? e.clientX : e.touches[0].clientX;
+            let delta = currentX - lastJellyX;
+            let stretch = 1 + Math.min(Math.abs(delta) * 0.03, 1.8);
+            let origin = delta > 0 ? 'left' : (delta < 0 ? 'right' : 'center');
+            
+            jellySlider.style.setProperty('--thumb-stretch', stretch);
+            jellySlider.style.setProperty('--thumb-origin', origin);
+            lastJellyX = currentX;
+        }
+
+        function endJelly() {
+            if(!isSlidingJelly) return;
+            isSlidingJelly = false;
+            jellySlider.style.setProperty('--thumb-trans', 'transform 0.6s cubic-bezier(0.4, 2.5, 0.4, 1)');
+            jellySlider.style.setProperty('--thumb-stretch', 1);
+        }
+
+        jellySlider.addEventListener('mousedown', startJelly);
+        jellySlider.addEventListener('touchstart', startJelly, {passive: true});
+        window.addEventListener('mousemove', moveJelly);
+        window.addEventListener('touchmove', moveJelly, {passive: true});
+        window.addEventListener('mouseup', endJelly);
+        window.addEventListener('touchend', endJelly);
     }
 
     initSettingsPersistence();
