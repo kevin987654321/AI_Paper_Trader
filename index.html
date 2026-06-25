@@ -92,7 +92,6 @@
         }
         .view-section.active { opacity: 1; pointer-events: auto; }
 
-        /* 視圖元件 */
         .stat-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; height: 96px; flex-shrink: 0; }
         .stat-card { padding: 16px; cursor: pointer; border-color: rgba(255,255,255,0.04); }
         .stat-card.active-focus { background: rgba(255, 255, 255, 0.04); box-shadow: inset 0 0 15px rgba(255,255,255,0.02); }
@@ -103,10 +102,26 @@
         #chart-container { flex: 1; min-height: 0; display: flex; flex-direction: column; padding: 16px 20px; }
         .chart-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; flex-shrink: 0; }
         .chart-wrapper { flex: 1; min-height: 0; position: relative; }
-        .timeframe-selector { display: flex; gap: 4px; background: rgba(0,0,0,0.4); padding: 3px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.03); }
-        .tf-btn { background: transparent; border: none; color: #555; padding: 5px 12px; border-radius: 4px; cursor: pointer; font-size: 11px; transition: 0.2s; font-weight: bold; }
-        .tf-btn:hover { color: #fff; }
-        .tf-btn.active { background: rgba(255,255,255,0.08); color: #fff; }
+        
+        /* 🌟 果凍滑動時間軸選擇器樣式 */
+        .timeframe-selector {
+            display: flex; gap: 4px; background: rgba(0,0,0,0.4); padding: 3px;
+            border-radius: 8px; border: 1px solid rgba(255,255,255,0.03);
+            position: relative; overflow: hidden; touch-action: none; 
+        }
+        .tf-active-bg {
+            position: absolute; top: 3px; bottom: 3px; left: 3px; width: 0;
+            background: rgba(255,255,255,0.15); border-radius: 5px;
+            transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1), width 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+            z-index: 1; pointer-events: none;
+        }
+        .tf-btn {
+            background: transparent; border: none; color: #666; padding: 5px 12px;
+            border-radius: 4px; cursor: pointer; font-size: 11px; font-weight: bold;
+            position: relative; z-index: 2; transition: color 0.3s;
+        }
+        .tf-btn:hover { color: #ccc; }
+        .tf-btn.active { color: #fff; }
 
         @keyframes breathe {
             0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; }
@@ -170,7 +185,6 @@
         input:checked + .slider { background-color: var(--color-dyn1); box-shadow: 0 0 10px var(--color-dyn1); }
         input:checked + .slider:before { transform: translateX(20px); background-color: #000; }
 
-        /* 高質感霧化背景 + 頂端跟手下拉彈窗 */
         .modal-overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100dvh;
             background: rgba(0, 0, 0, 0.3); z-index: 2000; display: none;
@@ -208,10 +222,8 @@
                 z-index: 50; position: absolute; top: 0; left: 0; width: 100%;
             }
             .mobile-menu-btn {
-                background: transparent; border: none; color: #fff; font-size: 20px; cursor: pointer; padding: 10px; margin-left: -10px;
-                z-index: 2; /* 確保按鈕在最上層 */
+                background: transparent; border: none; color: #fff; font-size: 20px; cursor: pointer; padding: 10px; margin-left: -10px; z-index: 2;
             }
-            /* 🌟 修改標題：使用絕對定位徹底置中 */
             .mobile-header-title {
                 position: absolute; left: 50%; transform: translateX(-50%);
                 font-weight: 900; letter-spacing: 3px; font-size: 16px; color: #fff; cursor: pointer;
@@ -235,8 +247,7 @@
             
             .view-section {
                 top: 60px; height: calc(100dvh - 60px); 
-                padding: 15px; 
-                padding-bottom: max(15px, env(safe-area-inset-bottom));
+                padding: 15px; padding-bottom: max(15px, env(safe-area-inset-bottom));
             }
             .stat-grid { grid-template-columns: repeat(2, 1fr); height: auto; margin-bottom: 5px; }
             .stat-card { padding: 12px; }
@@ -284,19 +295,19 @@
 
     <main id="view-dashboard" class="view-section active">
         <div class="stat-grid">
-            <div class="glass-panel stat-card active-focus" id="card-DYN_1" onclick="handleCardClick('DYN_1', event)">
+            <div class="glass-panel stat-card active-focus" id="card-DYN_1">
                 <div class="stat-title"><i class="fa-solid fa-rocket" style="color: var(--color-dyn1)"></i> DYN_1 積極 AI</div>
                 <div class="stat-value" id="val-dyn1">-</div>
             </div>
-            <div class="glass-panel stat-card active-focus" id="card-DYN_2" onclick="handleCardClick('DYN_2', event)">
+            <div class="glass-panel stat-card active-focus" id="card-DYN_2">
                 <div class="stat-title"><i class="fa-solid fa-shield-halved" style="color: var(--color-dyn2)"></i> DYN_2 穩健 AI</div>
                 <div class="stat-value" id="val-dyn2">-</div>
             </div>
-            <div class="glass-panel stat-card active-focus" id="card-STA_1" onclick="handleCardClick('STA_1', event)">
+            <div class="glass-panel stat-card active-focus" id="card-STA_1">
                 <div class="stat-title"><i class="fa-solid fa-bolt" style="color: var(--color-sta1)"></i> STA_1 靜態積極</div>
                 <div class="stat-value" id="val-sta1">-</div>
             </div>
-            <div class="glass-panel stat-card active-focus" id="card-STA_2" onclick="handleCardClick('STA_2', event)">
+            <div class="glass-panel stat-card active-focus" id="card-STA_2">
                 <div class="stat-title"><i class="fa-solid fa-layer-group" style="color: var(--color-sta2)"></i> STA_2 靜態穩健</div>
                 <div class="stat-value" id="val-sta2">-</div>
             </div>
@@ -306,11 +317,13 @@
             <div class="chart-header">
                 <div style="font-weight: bold; font-size: 13px; letter-spacing: 1px;"><i class="fa-solid fa-chart-area"></i> 宇宙總資產趨勢 (NAV)</div>
                 <div class="timeframe-selector" id="tf-group">
-                    <button class="tf-btn active" onclick="changeTimeframe(this, '1D')">1D</button>
-                    <button class="tf-btn" onclick="changeTimeframe(this, '1W')">1W</button>
-                    <button class="tf-btn" onclick="changeTimeframe(this, '1M')">1M</button>
-                    <button class="tf-btn" onclick="changeTimeframe(this, '3M')">3M</button>
-                    <button class="tf-btn" onclick="changeTimeframe(this, '1Y')">1Y</button>
+                    <div class="tf-active-bg" id="tf-active-bg"></div>
+                    <button class="tf-btn active" data-tf="1D">1D</button>
+                    <button class="tf-btn" data-tf="1W">1W</button>
+                    <button class="tf-btn" data-tf="1M">1M</button>
+                    <button class="tf-btn" data-tf="3M">3M</button>
+                    <button class="tf-btn" data-tf="1Y">1Y</button>
+                    <button class="tf-btn" data-tf="ALL">ALL</button>
                 </div>
             </div>
             <div class="chart-wrapper">
@@ -456,6 +469,45 @@
     document.getElementById('val-sta1').innerText = "$ " + s1[s1.length - 1].toLocaleString(undefined, {maximumFractionDigits: 0});
     document.getElementById('val-sta2').innerText = "$ " + s2[s2.length - 1].toLocaleString(undefined, {maximumFractionDigits: 0});
 
+    /* =========================================
+       🌟 智慧降採樣：計算應該顯示的節點 (剔除平移節點)
+       ========================================= */
+    function computeDecimatedRadii(dataArray) {
+        const isMobile = window.innerWidth <= 768;
+        const MAX_NODES = isMobile ? 30 : 60;
+        const len = dataArray.length;
+        const radii = Array(len).fill(0);
+        const hitRadii = Array(len).fill(isMobile ? 15 : 5); // 保留觸控精準度與範圍
+
+        if (len <= MAX_NODES) {
+            return { radii: Array(len).fill(3), hitRadii };
+        }
+
+        const scores = [];
+        for (let i = 1; i < len - 1; i++) {
+            const prev = dataArray[i-1];
+            const curr = dataArray[i];
+            const next = dataArray[i+1];
+            // 轉折點顯著性演算法：與前後平均值的絕對差距
+            const significance = Math.abs(curr - (prev + next) / 2);
+            scores.push({ index: i, sig: significance });
+        }
+
+        // 依據顯著性排序，挑出最重要的 N-2 個點
+        scores.sort((a, b) => b.sig - a.sig);
+        
+        const keepIndices = new Set([0, len - 1]); // 首尾必留
+        for (let i = 0; i < MAX_NODES - 2 && i < scores.length; i++) {
+            keepIndices.add(scores[i].index);
+        }
+
+        for (let i = 0; i < len; i++) {
+            if (keepIndices.has(i)) radii[i] = 3;
+        }
+
+        return { radii, hitRadii };
+    }
+
     function updateChartTimeframe(tf) {
         currentGlobalTimeframe = tf || currentGlobalTimeframe;
         if (typeof NAV_HISTORY === 'undefined' || !NAV_HISTORY.labels) return;
@@ -465,18 +517,15 @@
         
         let startIndex = 0;
         
-        if (chartTimestamps.length === totalPoints && currentGlobalTimeframe !== '1Y') {
+        if (currentGlobalTimeframe === 'ALL') {
+            startIndex = 0;
+        } else if (chartTimestamps.length === totalPoints) {
             const latestTimeMs = chartTimestamps[totalPoints - 1]; 
-            
             if (currentGlobalTimeframe === '1D') {
                 const latestDate = new Date(latestTimeMs);
                 const startOfDay = new Date(latestDate.getFullYear(), latestDate.getMonth(), latestDate.getDate()).getTime();
-                
                 for (let i = totalPoints - 1; i >= 0; i--) {
-                    if (chartTimestamps[i] < startOfDay) {
-                        startIndex = i + 1;
-                        break;
-                    }
+                    if (chartTimestamps[i] < startOfDay) { startIndex = i + 1; break; }
                 }
             } else {
                 let msLimit = Infinity;
@@ -487,26 +536,128 @@
                 }
                 if (msLimit !== Infinity) {
                     for (let i = totalPoints - 1; i >= 0; i--) {
-                        if (latestTimeMs - chartTimestamps[i] > msLimit) {
-                            startIndex = i + 1;
-                            break;
-                        }
+                        if (latestTimeMs - chartTimestamps[i] > msLimit) { startIndex = i + 1; break; }
                     }
                 }
             }
         }
         
-        // 🌟 針對手機版做標籤數量動態管控，避免 X 軸字體重疊
         const isMobile = window.innerWidth <= 768;
         mainChart.options.scales.x.ticks.maxTicksLimit = isMobile ? 4 : (currentGlobalTimeframe === '1D' ? 8 : 6);
         
-        mainChart.data.labels = chartLabels.slice(startIndex);
-        mainChart.data.datasets[0].data = d1.slice(startIndex);
-        mainChart.data.datasets[1].data = d2.slice(startIndex);
-        mainChart.data.datasets[2].data = s1.slice(startIndex);
-        mainChart.data.datasets[3].data = s2.slice(startIndex);
+        const slicedLabels = chartLabels.slice(startIndex);
+        const slicedD1 = d1.slice(startIndex);
+        const slicedD2 = d2.slice(startIndex);
+        const slicedS1 = s1.slice(startIndex);
+        const slicedS2 = s2.slice(startIndex);
+
+        // 🌟 寫入智慧剔除後的節點半徑陣列
+        const optD1 = computeDecimatedRadii(slicedD1);
+        const optD2 = computeDecimatedRadii(slicedD2);
+        const optS1 = computeDecimatedRadii(slicedS1);
+        const optS2 = computeDecimatedRadii(slicedS2);
+
+        mainChart.data.labels = slicedLabels;
+        
+        mainChart.data.datasets[0].data = slicedD1;
+        mainChart.data.datasets[0].pointRadius = optD1.radii;
+        mainChart.data.datasets[0].hitRadius = optD1.hitRadii;
+
+        mainChart.data.datasets[1].data = slicedD2;
+        mainChart.data.datasets[1].pointRadius = optD2.radii;
+        mainChart.data.datasets[1].hitRadius = optD2.hitRadii;
+
+        mainChart.data.datasets[2].data = slicedS1;
+        mainChart.data.datasets[2].pointRadius = optS1.radii;
+        mainChart.data.datasets[2].hitRadius = optS1.hitRadii;
+
+        mainChart.data.datasets[3].data = slicedS2;
+        mainChart.data.datasets[3].pointRadius = optS2.radii;
+        mainChart.data.datasets[3].hitRadius = optS2.hitRadii;
+
         mainChart.update();
     }
+
+    /* =========================================
+       🌟 果凍滑動時間軸選擇器邏輯 (Jelly Swipe)
+       ========================================= */
+    const tfGroup = document.getElementById('tf-group');
+    const tfBg = document.getElementById('tf-active-bg');
+    let tfIsDragging = false;
+    let tfStartX = 0, tfCurrentX = 0;
+
+    function updateTfBg(btn) {
+        tfBg.style.width = btn.offsetWidth + 'px';
+        tfBg.style.transform = `translateX(${btn.offsetLeft - 3}px)`; 
+        document.querySelectorAll('.tf-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+    }
+
+    document.querySelectorAll('.tf-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            updateTfBg(e.target);
+            updateChartTimeframe(e.target.getAttribute('data-tf'));
+        });
+    });
+
+    window.addEventListener('resize', () => {
+        const activeBtn = document.querySelector('.tf-btn.active');
+        if(activeBtn) updateTfBg(activeBtn);
+    });
+    
+    // 初始化背景位置
+    setTimeout(() => updateTfBg(document.querySelector('.tf-btn.active')), 50);
+
+    tfGroup.addEventListener('touchstart', (e) => {
+        tfIsDragging = true;
+        tfStartX = e.touches[0].clientX;
+        const activeBtn = document.querySelector('.tf-btn.active');
+        tfCurrentX = activeBtn.offsetLeft - 3;
+        tfBg.style.transition = 'none'; 
+    }, {passive: true});
+
+    tfGroup.addEventListener('touchmove', (e) => {
+        if(!tfIsDragging) return;
+        const diff = e.touches[0].clientX - tfStartX;
+        let newX = tfCurrentX + diff;
+
+        // 邊界阻力設定
+        const maxLeft = 0;
+        const maxRight = tfGroup.offsetWidth - tfBg.offsetWidth - 6;
+        if(newX < maxLeft) newX = maxLeft - Math.pow(maxLeft - newX, 0.7); 
+        if(newX > maxRight) newX = maxRight + Math.pow(newX - maxRight, 0.7);
+
+        // 果凍拉伸視覺 (隨滑動速度微放大)
+        const stretch = Math.min(1 + Math.abs(diff)*0.003, 1.15);
+        const origin = diff > 0 ? 'left' : 'right';
+
+        tfBg.style.transformOrigin = origin;
+        tfBg.style.transform = `translateX(${newX}px) scaleX(${stretch})`;
+    }, {passive: false});
+
+    function handleTfEnd() {
+        if(!tfIsDragging) return;
+        tfIsDragging = false;
+        tfBg.style.transition = 'transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1), width 0.4s cubic-bezier(0.34, 1.56, 0.64, 1)';
+        tfBg.style.transformOrigin = 'center';
+
+        const bgRect = tfBg.getBoundingClientRect();
+        const bgCenter = bgRect.left + bgRect.width / 2;
+        let closestBtn = null, minDistance = Infinity;
+
+        document.querySelectorAll('.tf-btn').forEach(btn => {
+            const btnCenter = btn.getBoundingClientRect().left + btn.getBoundingClientRect().width / 2;
+            const distance = Math.abs(bgCenter - btnCenter);
+            if (distance < minDistance) { minDistance = distance; closestBtn = btn; }
+        });
+
+        if (closestBtn) {
+            updateTfBg(closestBtn);
+            updateChartTimeframe(closestBtn.getAttribute('data-tf'));
+        }
+    }
+    tfGroup.addEventListener('touchend', handleTfEnd);
+    tfGroup.addEventListener('touchcancel', handleTfEnd);
 
     /* =========================================
        1. 游標高光追蹤
@@ -538,7 +689,6 @@
     /* =========================================
        3. 矩陣狀態機邏輯 & 長按事件
        ========================================= */
-    let selectedUniverses = ['DYN_1', 'DYN_2', 'STA_1', 'STA_2'];
     let cardLongPressed = false;
     let cardTimer = null;
 
@@ -560,6 +710,7 @@
         el.addEventListener('mousedown', startPress);
         el.addEventListener('mouseup', cancelPress);
         el.addEventListener('mouseleave', cancelPress);
+        el.addEventListener('click', (e) => handleCardClick(u, e));
     });
 
     function handleCardClick(universe, event) {
@@ -672,12 +823,6 @@
             }, 50);
         }
     });
-
-    function changeTimeframe(btn, tf) {
-        document.querySelectorAll('.tf-btn').forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
-        updateChartTimeframe(tf);
-    }
 
     function showPointDetail(label, color, timeLabel, value) {
         let universeName = '';
@@ -817,7 +962,7 @@
     }
 
     /* =========================================
-       6. 🌟 智慧防誤觸與側邊欄滑動解鎖
+       6. 🌟 智慧防誤觸與側邊欄中斷判定機制
        ========================================= */
     const sidebarEl = document.getElementById('sidebar');
     const overlayEl = document.getElementById('sidebar-overlay');
@@ -887,7 +1032,8 @@
         }
     }, {passive: false});
 
-    document.addEventListener('touchend', (e) => {
+    // 🌟 將收尾邏輯獨立成函數，以應對各種中斷情境
+    function handleSwipeEnd() {
         if (!isDraggingMenu || window.innerWidth > 768) return;
         isDraggingMenu = false;
         sidebarEl.classList.remove('dragging');
@@ -909,6 +1055,14 @@
         }
         sidebarEl.style.transform = ''; 
         touchStartX = 0; touchStartY = 0; touchCurrentX = 0;
+    }
+
+    document.addEventListener('touchend', handleSwipeEnd);
+    // 🌟 應對控制中心拉下、來電等中斷事件
+    document.addEventListener('touchcancel', handleSwipeEnd);
+    // 🌟 應對瀏覽器分頁切換凍結事件
+    document.addEventListener('visibilitychange', () => {
+        if (document.hidden && isDraggingMenu) handleSwipeEnd();
     });
 
     const detailModalBox = document.getElementById('detailModalBox');
