@@ -171,7 +171,7 @@
         input:checked + .slider { background-color: var(--color-dyn1); box-shadow: 0 0 10px var(--color-dyn1); }
         input:checked + .slider:before { transform: translateX(20px); background-color: #000; }
 
-        /* 🌟 極致果凍物理引擎滑桿：霧面毛玻璃圓球 */
+        /* 極致果凍物理引擎滑桿：霧面毛玻璃圓球 */
         .jelly-slider-container { position: relative; width: 100%; height: 24px; display: flex; align-items: center; }
         .jelly-slider-track { position: absolute; left: 0; right: 0; height: 6px; border-radius: 4px; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.1); pointer-events: none; }
         .jelly-slider-thumb { 
@@ -191,6 +191,7 @@
         /* 關閉顯示節點時的鎖死灰階狀態 */
         .setting-item.disabled { opacity: 0.25; pointer-events: none; filter: grayscale(100%); }
 
+        /* 高質感霧化背景 + 頂端跟手下拉彈窗 */
         .modal-overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100dvh;
             background: rgba(0, 0, 0, 0.3); z-index: 2000; display: none;
@@ -213,6 +214,12 @@
             width: 36px; height: 5px; background: rgba(255,255,255,0.3);
             border-radius: 3px; margin: 15px auto 0 auto; cursor: grab;
         }
+
+        /* =========================================
+           📱 修正：找回手機版標題隱藏機制 (Mobile Responsive)
+           ========================================= */
+        #mobile-header { display: none; }
+        #sidebar-overlay { display: none; }
 
         @media (max-width: 768px) {
             #mobile-header {
@@ -496,7 +503,6 @@
     document.getElementById('val-sta1').innerText = "$ " + s1[s1.length - 1].toLocaleString(undefined, {maximumFractionDigits: 0});
     document.getElementById('val-sta2').innerText = "$ " + s2[s2.length - 1].toLocaleString(undefined, {maximumFractionDigits: 0});
 
-    // 🌟 智慧權重計算器
     function calculatePointRadii(datasetData) {
         if (!showChartNodes) return datasetData.map(() => 0);
         if (maxChartNodes === 'All') return datasetData.map(() => 3);
@@ -512,14 +518,14 @@
 
         for (let i = 0; i < len; i++) {
             if (i === 0 || i === len - 1) {
-                importance.push({ i, val: Infinity }); // 頭尾必留
+                importance.push({ i, val: Infinity });
             } else {
                 let diffPrev = Math.abs(datasetData[i] - datasetData[i-1]);
                 let diffNext = Math.abs(datasetData[i] - datasetData[i+1]);
                 if (diffPrev === 0 && diffNext === 0) {
-                    importance.push({ i, val: -1 }); // 平坦區間權重最低
+                    importance.push({ i, val: -1 }); 
                 } else {
-                    importance.push({ i, val: diffPrev + diffNext }); // 依轉折幅度排定優先權
+                    importance.push({ i, val: diffPrev + diffNext }); 
                 }
             }
         }
@@ -711,13 +717,10 @@
     let isPointerDown = false;
     let pointerDownTime = 0;
     
-    // 綁定手勢，Hold-to-Preview
     canvasEl.addEventListener('mousedown', () => { isPointerDown = true; pointerDownTime = Date.now(); mainChart.update(); });
     window.addEventListener('mouseup', () => { isPointerDown = false; mainChart.tooltip.setActiveElements([], {x:0, y:0}); mainChart.update(); });
     
     canvasEl.addEventListener('touchstart', () => { isPointerDown = true; pointerDownTime = Date.now(); }, {passive: true});
-    
-    // 🌟 手機版放開後強制清除 hover 狀態，圓圈立即縮回
     window.addEventListener('touchend', () => { 
         isPointerDown = false; 
         if (isMobileDevice && mainChart) { 
@@ -731,7 +734,6 @@
         type: 'line', data: chartData,
         options: {
             responsive: true, maintainAspectRatio: false,
-            // 🌟 加入 clip: false 與 padding，確保畫布邊緣的點不會被切西瓜
             clip: false, 
             layout: { padding: { left: 10, right: 10, top: 10, bottom: 10 } },
             interaction: { mode: 'index', intersect: false },
@@ -739,7 +741,7 @@
                 legend: { display: false }, 
                 tooltip: { 
                     backgroundColor: 'rgba(0,0,0,0.8)', titleColor: '#fff', padding: 12,
-                    filter: function() { return isPointerDown; } // 僅按住才顯示黑框
+                    filter: function() { return isPointerDown; } 
                 } 
             },
             scales: {
@@ -773,7 +775,6 @@
     let activeTfIndex = 0; 
     let initialBgLeft = 0;
 
-    // 🌟 動態更新文字白光的邏輯，依據色塊中心點與各按鈕中心點的距離
     function updateTfTextHighlight(bgCenterX) {
         let minDiff = Infinity;
         let closestIndex = activeTfIndex;
@@ -825,7 +826,6 @@
         tfBg.style.transform = `translateX(${moveX}px) scaleX(${Math.min(stretch, 1.3)})`;
         tfBg.style.transformOrigin = diff > 0 ? "left center" : "right center";
         
-        // 即時判斷文字點亮
         let bgVisualCenter = moveX + (tfBtns[activeTfIndex].offsetWidth / 2);
         updateTfTextHighlight(bgVisualCenter);
     }, {passive: false});
@@ -1295,7 +1295,6 @@
             updateChartTimeframe(); 
         }
 
-        // 果凍物理變形引擎：即時運算拖曳速度決定拉伸幅度
         let lastVal = sliderMaxNodes.value;
         let lastTime = Date.now();
         let isDraggingSlider = false;
@@ -1325,7 +1324,6 @@
             const dv = e.target.value - lastVal;
             let velocity = dv / dt; 
             
-            // 計算尾部拉長的物理拉伸量
             let speed = Math.abs(velocity);
             let stretch = 1 + Math.min(speed * 0.5, 0.8); 
             let squash = 1 - Math.min(speed * 0.15, 0.4); 
@@ -1338,7 +1336,6 @@
             
             clearTimeout(jellySpringTimer);
             jellySpringTimer = setTimeout(() => {
-                // 放慢或停止時的果凍回彈動畫
                 sliderThumb.style.transition = 'transform 0.6s cubic-bezier(0.4, 2.5, 0.4, 0.9)'; 
                 sliderThumb.style.transform = 'scale(1, 1)';
             }, 40); 
