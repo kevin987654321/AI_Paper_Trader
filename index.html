@@ -92,6 +92,7 @@
         }
         .view-section.active { opacity: 1; pointer-events: auto; }
 
+        /* 視圖元件 */
         .stat-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; height: 96px; flex-shrink: 0; }
         .stat-card { padding: 16px; cursor: pointer; border-color: rgba(255,255,255,0.04); }
         .stat-card.active-focus { background: rgba(255, 255, 255, 0.04); box-shadow: inset 0 0 15px rgba(255,255,255,0.02); }
@@ -103,25 +104,12 @@
         .chart-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; flex-shrink: 0; }
         .chart-wrapper { flex: 1; min-height: 0; position: relative; }
         
-        /* 🌟 果凍滑動時間軸選擇器樣式 */
-        .timeframe-selector {
-            display: flex; gap: 4px; background: rgba(0,0,0,0.4); padding: 3px;
-            border-radius: 8px; border: 1px solid rgba(255,255,255,0.03);
-            position: relative; overflow: hidden; touch-action: none; 
-        }
-        .tf-active-bg {
-            position: absolute; top: 3px; bottom: 3px; left: 3px; width: 0;
-            background: rgba(255,255,255,0.15); border-radius: 5px;
-            transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1), width 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
-            z-index: 1; pointer-events: none;
-        }
-        .tf-btn {
-            background: transparent; border: none; color: #666; padding: 5px 12px;
-            border-radius: 4px; cursor: pointer; font-size: 11px; font-weight: bold;
-            position: relative; z-index: 2; transition: color 0.3s;
-        }
-        .tf-btn:hover { color: #ccc; }
+        /* 🌟 新增：時間軸彈性浮動選擇器 (Jelly Pill) */
+        .timeframe-selector { position: relative; display: flex; gap: 4px; background: rgba(0,0,0,0.4); padding: 3px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.03); overflow: hidden; touch-action: pan-y; }
+        .tf-active-bg { position: absolute; top: 3px; bottom: 3px; left: 0; background: rgba(255,255,255,0.12); border-radius: 4px; transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), width 0.3s cubic-bezier(0.4, 0, 0.2, 1); z-index: 1; }
+        .tf-btn { position: relative; z-index: 2; background: transparent; border: none; color: #555; padding: 5px 12px; border-radius: 4px; cursor: pointer; font-size: 11px; transition: color 0.2s; font-weight: bold; }
         .tf-btn.active { color: #fff; }
+        .tf-btn:hover { color: #fff; }
 
         @keyframes breathe {
             0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; }
@@ -185,6 +173,14 @@
         input:checked + .slider { background-color: var(--color-dyn1); box-shadow: 0 0 10px var(--color-dyn1); }
         input:checked + .slider:before { transform: translateX(20px); background-color: #000; }
 
+        /* 🌟 新增：設定頁面的果凍滑桿 */
+        .jelly-slider { -webkit-appearance: none; width: 100%; height: 6px; border-radius: 4px; background: rgba(255,255,255,0.1); outline: none; transition: .2s; }
+        .jelly-slider::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 18px; height: 18px; border-radius: 50%; background: var(--color-dyn2); cursor: pointer; box-shadow: 0 0 10px var(--color-dyn2); transition: transform 0.1s cubic-bezier(0.4, 0, 0.2, 1); }
+        .jelly-slider::-webkit-slider-thumb:active { transform: scale(1.3, 0.7); }
+        .jelly-input { width: 45px; background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.1); color: #fff; padding: 4px; border-radius: 6px; text-align: center; font-family: monospace; font-size: 13px; transition: border-color 0.3s; }
+        .jelly-input:focus { outline: none; border-color: var(--color-dyn2); }
+
+        /* 高質感霧化背景 + 頂端跟手下拉彈窗 */
         .modal-overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100dvh;
             background: rgba(0, 0, 0, 0.3); z-index: 2000; display: none;
@@ -222,7 +218,8 @@
                 z-index: 50; position: absolute; top: 0; left: 0; width: 100%;
             }
             .mobile-menu-btn {
-                background: transparent; border: none; color: #fff; font-size: 20px; cursor: pointer; padding: 10px; margin-left: -10px; z-index: 2;
+                background: transparent; border: none; color: #fff; font-size: 20px; cursor: pointer; padding: 10px; margin-left: -10px;
+                z-index: 2;
             }
             .mobile-header-title {
                 position: absolute; left: 50%; transform: translateX(-50%);
@@ -247,7 +244,8 @@
             
             .view-section {
                 top: 60px; height: calc(100dvh - 60px); 
-                padding: 15px; padding-bottom: max(15px, env(safe-area-inset-bottom));
+                padding: 15px; 
+                padding-bottom: max(15px, env(safe-area-inset-bottom));
             }
             .stat-grid { grid-template-columns: repeat(2, 1fr); height: auto; margin-bottom: 5px; }
             .stat-card { padding: 12px; }
@@ -295,19 +293,19 @@
 
     <main id="view-dashboard" class="view-section active">
         <div class="stat-grid">
-            <div class="glass-panel stat-card active-focus" id="card-DYN_1">
+            <div class="glass-panel stat-card active-focus" id="card-DYN_1" onclick="handleCardClick('DYN_1', event)">
                 <div class="stat-title"><i class="fa-solid fa-rocket" style="color: var(--color-dyn1)"></i> DYN_1 積極 AI</div>
                 <div class="stat-value" id="val-dyn1">-</div>
             </div>
-            <div class="glass-panel stat-card active-focus" id="card-DYN_2">
+            <div class="glass-panel stat-card active-focus" id="card-DYN_2" onclick="handleCardClick('DYN_2', event)">
                 <div class="stat-title"><i class="fa-solid fa-shield-halved" style="color: var(--color-dyn2)"></i> DYN_2 穩健 AI</div>
                 <div class="stat-value" id="val-dyn2">-</div>
             </div>
-            <div class="glass-panel stat-card active-focus" id="card-STA_1">
+            <div class="glass-panel stat-card active-focus" id="card-STA_1" onclick="handleCardClick('STA_1', event)">
                 <div class="stat-title"><i class="fa-solid fa-bolt" style="color: var(--color-sta1)"></i> STA_1 靜態積極</div>
                 <div class="stat-value" id="val-sta1">-</div>
             </div>
-            <div class="glass-panel stat-card active-focus" id="card-STA_2">
+            <div class="glass-panel stat-card active-focus" id="card-STA_2" onclick="handleCardClick('STA_2', event)">
                 <div class="stat-title"><i class="fa-solid fa-layer-group" style="color: var(--color-sta2)"></i> STA_2 靜態穩健</div>
                 <div class="stat-value" id="val-sta2">-</div>
             </div>
@@ -323,7 +321,7 @@
                     <button class="tf-btn" data-tf="1M">1M</button>
                     <button class="tf-btn" data-tf="3M">3M</button>
                     <button class="tf-btn" data-tf="1Y">1Y</button>
-                    <button class="tf-btn" data-tf="ALL">ALL</button>
+                    <button class="tf-btn" data-tf="All">All</button>
                 </div>
             </div>
             <div class="chart-wrapper">
@@ -396,6 +394,24 @@
         <div class="settings-list">
             <div class="glass-panel setting-item">
                 <div>
+                    <div style="font-weight: bold; color: #fff;">圖表節點顯示</div>
+                    <div style="font-size: 12px; color: #777; margin-top: 4px;">顯示折線圖上的數據圓點。</div>
+                </div>
+                <label class="switch"><input type="checkbox" id="setting-nodes-show" checked><span class="slider"></span></label>
+            </div>
+            <div class="glass-panel setting-item">
+                <div>
+                    <div style="font-weight: bold; color: #fff;">節點顯示上限</div>
+                    <div style="font-size: 12px; color: #777; margin-top: 4px;">過濾平緩區間，僅保留關鍵轉折。</div>
+                </div>
+                <div style="display: flex; align-items: center; gap: 10px; width: 50%; justify-content: flex-end;">
+                    <input type="range" id="setting-nodes-max" min="2" max="201" step="1" class="jelly-slider">
+                    <input type="text" id="setting-nodes-input" class="jelly-input">
+                </div>
+            </div>
+            
+            <div class="glass-panel setting-item">
+                <div>
                     <div style="font-weight: bold; color: #fff;">LINE 戰報自動推播</div>
                     <div style="font-size: 12px; color: #777; margin-top: 4px;">觸發交易時自動傳送 4D 矩陣戰況至手機。</div>
                 </div>
@@ -429,7 +445,14 @@
 
 <script>
     /* =========================================
-       0. 數據橋接核心與真實時間戳記轉化
+       0. 節點設定初始化 (優先執行以備圖表繪製)
+       ========================================= */
+    const isMobileDevice = window.innerWidth <= 768;
+    let showChartNodes = localStorage.getItem('SETTING_SHOW_NODES') !== 'false';
+    let maxChartNodes = localStorage.getItem('SETTING_MAX_NODES') || (isMobileDevice ? 30 : 60);
+
+    /* =========================================
+       1. 數據橋接核心與真實時間戳記轉化
        ========================================= */
     let chartLabels = ['等待啟動'];
     let chartTimestamps = []; 
@@ -469,45 +492,44 @@
     document.getElementById('val-sta1').innerText = "$ " + s1[s1.length - 1].toLocaleString(undefined, {maximumFractionDigits: 0});
     document.getElementById('val-sta2').innerText = "$ " + s2[s2.length - 1].toLocaleString(undefined, {maximumFractionDigits: 0});
 
-    /* =========================================
-       🌟 智慧降採樣：計算應該顯示的節點 (剔除平移節點)
-       ========================================= */
-    function computeDecimatedRadii(dataArray) {
-        const isMobile = window.innerWidth <= 768;
-        const MAX_NODES = isMobile ? 30 : 60;
-        const len = dataArray.length;
-        const radii = Array(len).fill(0);
-        const hitRadii = Array(len).fill(isMobile ? 15 : 5); // 保留觸控精準度與範圍
+    // 🌟 AI 智慧節點權重過濾器
+    function calculatePointRadii(datasetData) {
+        if (!showChartNodes) return datasetData.map(() => 0);
+        if (maxChartNodes === 'All') return datasetData.map(() => 3);
 
-        if (len <= MAX_NODES) {
-            return { radii: Array(len).fill(3), hitRadii };
-        }
+        let n = parseInt(maxChartNodes);
+        if (isNaN(n) || n < 2) n = 2; // 至少保留頭尾
 
-        const scores = [];
-        for (let i = 1; i < len - 1; i++) {
-            const prev = dataArray[i-1];
-            const curr = dataArray[i];
-            const next = dataArray[i+1];
-            // 轉折點顯著性演算法：與前後平均值的絕對差距
-            const significance = Math.abs(curr - (prev + next) / 2);
-            scores.push({ index: i, sig: significance });
-        }
+        let len = datasetData.length;
+        if (len <= n) return datasetData.map(() => 3);
 
-        // 依據顯著性排序，挑出最重要的 N-2 個點
-        scores.sort((a, b) => b.sig - a.sig);
-        
-        const keepIndices = new Set([0, len - 1]); // 首尾必留
-        for (let i = 0; i < MAX_NODES - 2 && i < scores.length; i++) {
-            keepIndices.add(scores[i].index);
-        }
+        let radii = new Array(len).fill(0);
+        let importance = [];
 
         for (let i = 0; i < len; i++) {
-            if (keepIndices.has(i)) radii[i] = 3;
+            if (i === 0 || i === len - 1) {
+                importance.push({ i, val: Infinity }); // 強制保留起點與終點
+            } else {
+                let diffPrev = Math.abs(datasetData[i] - datasetData[i-1]);
+                let diffNext = Math.abs(datasetData[i] - datasetData[i+1]);
+                if (diffPrev === 0 && diffNext === 0) {
+                    importance.push({ i, val: -1 }); // 剔除平緩無變動區間
+                } else {
+                    importance.push({ i, val: diffPrev + diffNext }); // 依轉折幅度排定優先權
+                }
+            }
         }
 
-        return { radii, hitRadii };
+        // 依重要性降冪排序，選取前 n 個名額
+        importance.sort((a, b) => b.val - a.val);
+        for (let k = 0; k < n; k++) {
+            radii[importance[k].i] = 3;
+        }
+
+        return radii;
     }
 
+    // 更新圖表與時間軸過濾
     function updateChartTimeframe(tf) {
         currentGlobalTimeframe = tf || currentGlobalTimeframe;
         if (typeof NAV_HISTORY === 'undefined' || !NAV_HISTORY.labels) return;
@@ -517,15 +539,18 @@
         
         let startIndex = 0;
         
-        if (currentGlobalTimeframe === 'ALL') {
-            startIndex = 0;
-        } else if (chartTimestamps.length === totalPoints) {
+        if (chartTimestamps.length === totalPoints && currentGlobalTimeframe !== 'All' && currentGlobalTimeframe !== '1Y') {
             const latestTimeMs = chartTimestamps[totalPoints - 1]; 
+            
             if (currentGlobalTimeframe === '1D') {
                 const latestDate = new Date(latestTimeMs);
                 const startOfDay = new Date(latestDate.getFullYear(), latestDate.getMonth(), latestDate.getDate()).getTime();
+                
                 for (let i = totalPoints - 1; i >= 0; i--) {
-                    if (chartTimestamps[i] < startOfDay) { startIndex = i + 1; break; }
+                    if (chartTimestamps[i] < startOfDay) {
+                        startIndex = i + 1;
+                        break;
+                    }
                 }
             } else {
                 let msLimit = Infinity;
@@ -536,131 +561,40 @@
                 }
                 if (msLimit !== Infinity) {
                     for (let i = totalPoints - 1; i >= 0; i--) {
-                        if (latestTimeMs - chartTimestamps[i] > msLimit) { startIndex = i + 1; break; }
+                        if (latestTimeMs - chartTimestamps[i] > msLimit) {
+                            startIndex = i + 1;
+                            break;
+                        }
                     }
                 }
             }
         }
         
-        const isMobile = window.innerWidth <= 768;
-        mainChart.options.scales.x.ticks.maxTicksLimit = isMobile ? 4 : (currentGlobalTimeframe === '1D' ? 8 : 6);
+        mainChart.options.scales.x.ticks.maxTicksLimit = isMobileDevice ? 4 : (currentGlobalTimeframe === '1D' ? 8 : 6);
         
-        const slicedLabels = chartLabels.slice(startIndex);
-        const slicedD1 = d1.slice(startIndex);
-        const slicedD2 = d2.slice(startIndex);
-        const slicedS1 = s1.slice(startIndex);
-        const slicedS2 = s2.slice(startIndex);
-
-        // 🌟 寫入智慧剔除後的節點半徑陣列
-        const optD1 = computeDecimatedRadii(slicedD1);
-        const optD2 = computeDecimatedRadii(slicedD2);
-        const optS1 = computeDecimatedRadii(slicedS1);
-        const optS2 = computeDecimatedRadii(slicedS2);
-
-        mainChart.data.labels = slicedLabels;
+        mainChart.data.labels = chartLabels.slice(startIndex);
         
-        mainChart.data.datasets[0].data = slicedD1;
-        mainChart.data.datasets[0].pointRadius = optD1.radii;
-        mainChart.data.datasets[0].hitRadius = optD1.hitRadii;
+        const data1 = d1.slice(startIndex);
+        mainChart.data.datasets[0].data = data1;
+        mainChart.data.datasets[0].pointRadius = calculatePointRadii(data1);
 
-        mainChart.data.datasets[1].data = slicedD2;
-        mainChart.data.datasets[1].pointRadius = optD2.radii;
-        mainChart.data.datasets[1].hitRadius = optD2.hitRadii;
+        const data2 = d2.slice(startIndex);
+        mainChart.data.datasets[1].data = data2;
+        mainChart.data.datasets[1].pointRadius = calculatePointRadii(data2);
 
-        mainChart.data.datasets[2].data = slicedS1;
-        mainChart.data.datasets[2].pointRadius = optS1.radii;
-        mainChart.data.datasets[2].hitRadius = optS1.hitRadii;
+        const data3 = s1.slice(startIndex);
+        mainChart.data.datasets[2].data = data3;
+        mainChart.data.datasets[2].pointRadius = calculatePointRadii(data3);
 
-        mainChart.data.datasets[3].data = slicedS2;
-        mainChart.data.datasets[3].pointRadius = optS2.radii;
-        mainChart.data.datasets[3].hitRadius = optS2.hitRadii;
+        const data4 = s2.slice(startIndex);
+        mainChart.data.datasets[3].data = data4;
+        mainChart.data.datasets[3].pointRadius = calculatePointRadii(data4);
 
         mainChart.update();
     }
 
     /* =========================================
-       🌟 果凍滑動時間軸選擇器邏輯 (Jelly Swipe)
-       ========================================= */
-    const tfGroup = document.getElementById('tf-group');
-    const tfBg = document.getElementById('tf-active-bg');
-    let tfIsDragging = false;
-    let tfStartX = 0, tfCurrentX = 0;
-
-    function updateTfBg(btn) {
-        tfBg.style.width = btn.offsetWidth + 'px';
-        tfBg.style.transform = `translateX(${btn.offsetLeft - 3}px)`; 
-        document.querySelectorAll('.tf-btn').forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
-    }
-
-    document.querySelectorAll('.tf-btn').forEach(btn => {
-        btn.addEventListener('click', (e) => {
-            updateTfBg(e.target);
-            updateChartTimeframe(e.target.getAttribute('data-tf'));
-        });
-    });
-
-    window.addEventListener('resize', () => {
-        const activeBtn = document.querySelector('.tf-btn.active');
-        if(activeBtn) updateTfBg(activeBtn);
-    });
-    
-    // 初始化背景位置
-    setTimeout(() => updateTfBg(document.querySelector('.tf-btn.active')), 50);
-
-    tfGroup.addEventListener('touchstart', (e) => {
-        tfIsDragging = true;
-        tfStartX = e.touches[0].clientX;
-        const activeBtn = document.querySelector('.tf-btn.active');
-        tfCurrentX = activeBtn.offsetLeft - 3;
-        tfBg.style.transition = 'none'; 
-    }, {passive: true});
-
-    tfGroup.addEventListener('touchmove', (e) => {
-        if(!tfIsDragging) return;
-        const diff = e.touches[0].clientX - tfStartX;
-        let newX = tfCurrentX + diff;
-
-        // 邊界阻力設定
-        const maxLeft = 0;
-        const maxRight = tfGroup.offsetWidth - tfBg.offsetWidth - 6;
-        if(newX < maxLeft) newX = maxLeft - Math.pow(maxLeft - newX, 0.7); 
-        if(newX > maxRight) newX = maxRight + Math.pow(newX - maxRight, 0.7);
-
-        // 果凍拉伸視覺 (隨滑動速度微放大)
-        const stretch = Math.min(1 + Math.abs(diff)*0.003, 1.15);
-        const origin = diff > 0 ? 'left' : 'right';
-
-        tfBg.style.transformOrigin = origin;
-        tfBg.style.transform = `translateX(${newX}px) scaleX(${stretch})`;
-    }, {passive: false});
-
-    function handleTfEnd() {
-        if(!tfIsDragging) return;
-        tfIsDragging = false;
-        tfBg.style.transition = 'transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1), width 0.4s cubic-bezier(0.34, 1.56, 0.64, 1)';
-        tfBg.style.transformOrigin = 'center';
-
-        const bgRect = tfBg.getBoundingClientRect();
-        const bgCenter = bgRect.left + bgRect.width / 2;
-        let closestBtn = null, minDistance = Infinity;
-
-        document.querySelectorAll('.tf-btn').forEach(btn => {
-            const btnCenter = btn.getBoundingClientRect().left + btn.getBoundingClientRect().width / 2;
-            const distance = Math.abs(bgCenter - btnCenter);
-            if (distance < minDistance) { minDistance = distance; closestBtn = btn; }
-        });
-
-        if (closestBtn) {
-            updateTfBg(closestBtn);
-            updateChartTimeframe(closestBtn.getAttribute('data-tf'));
-        }
-    }
-    tfGroup.addEventListener('touchend', handleTfEnd);
-    tfGroup.addEventListener('touchcancel', handleTfEnd);
-
-    /* =========================================
-       1. 游標高光追蹤
+       2. 游標高光追蹤 & 頁面切換邏輯
        ========================================= */
     document.addEventListener('mousemove', e => {
         document.querySelectorAll('.glass-panel, .glass-title-text').forEach(el => {
@@ -670,16 +604,13 @@
         });
     });
 
-    /* =========================================
-       2. 分頁無縫切換邏輯
-       ========================================= */
     function switchView(viewId, menuItem) {
         document.querySelectorAll('.menu-item').forEach(el => el.classList.remove('active'));
         menuItem.classList.add('active');
         document.querySelectorAll('.view-section').forEach(el => el.classList.remove('active'));
         document.getElementById(viewId).classList.add('active');
         
-        if (window.innerWidth <= 768 && sidebarEl.classList.contains('open')) {
+        if (isMobileDevice && sidebarEl.classList.contains('open')) {
             toggleSidebar();
         }
         if (viewId === 'view-records') renderLedgerTable();
@@ -689,6 +620,7 @@
     /* =========================================
        3. 矩陣狀態機邏輯 & 長按事件
        ========================================= */
+    let selectedUniverses = ['DYN_1', 'DYN_2', 'STA_1', 'STA_2'];
     let cardLongPressed = false;
     let cardTimer = null;
 
@@ -710,14 +642,12 @@
         el.addEventListener('mousedown', startPress);
         el.addEventListener('mouseup', cancelPress);
         el.addEventListener('mouseleave', cancelPress);
-        el.addEventListener('click', (e) => handleCardClick(u, e));
     });
 
     function handleCardClick(universe, event) {
         if (cardLongPressed) return; 
 
-        const isMobile = window.innerWidth <= 768;
-        if (isMobile || event.ctrlKey || event.metaKey) {
+        if (isMobileDevice || event.ctrlKey || event.metaKey) {
             if (selectedUniverses.length === 4) {
                 selectedUniverses = [universe];
             } else if (selectedUniverses.includes(universe)) {
@@ -776,10 +706,10 @@
     const chartData = {
         labels: chartLabels,
         datasets: [
-            { label: 'DYN_1', data: d1, borderColor: '#00ffaa', fill: false, tension: 0.1, pointRadius: 3, borderWidth: 2, hitRadius: window.innerWidth <= 768 ? 15 : 5 },
-            { label: 'DYN_2', data: d2, borderColor: '#00d4ff', fill: false, tension: 0.1, pointRadius: 3, borderWidth: 2, hitRadius: window.innerWidth <= 768 ? 15 : 5 }, 
-            { label: 'STA_1', data: s1, borderColor: '#ff4560', fill: false, tension: 0.1, pointRadius: 3, borderWidth: 2, borderDash: [2,4], hitRadius: window.innerWidth <= 768 ? 15 : 5 },
-            { label: 'STA_2', data: s2, borderColor: '#feb019', fill: false, tension: 0.1, pointRadius: 3, borderWidth: 2, borderDash: [1,6], hitRadius: window.innerWidth <= 768 ? 15 : 5 }
+            { label: 'DYN_1', data: [], borderColor: '#00ffaa', fill: false, tension: 0.1, borderWidth: 2, hitRadius: isMobileDevice ? 15 : 5, hoverRadius: 5 },
+            { label: 'DYN_2', data: [], borderColor: '#00d4ff', fill: false, tension: 0.1, borderWidth: 2, hitRadius: isMobileDevice ? 15 : 5, hoverRadius: 5 }, 
+            { label: 'STA_1', data: [], borderColor: '#ff4560', fill: false, tension: 0.1, borderWidth: 2, borderDash: [2,4], hitRadius: isMobileDevice ? 15 : 5, hoverRadius: 5 },
+            { label: 'STA_2', data: [], borderColor: '#feb019', fill: false, tension: 0.1, borderWidth: 2, borderDash: [1,6], hitRadius: isMobileDevice ? 15 : 5, hoverRadius: 5 }
         ]
     };
 
@@ -801,7 +731,7 @@
                 x: { grid: { display: false }, ticks: { color: '#666', maxRotation: 0, autoSkip: true, font: { size: 10 } } }
             },
             onClick: (e, elements) => {
-                if (window.innerWidth <= 768 && Date.now() - canvasTouchStart > 300) {
+                if (isMobileDevice && Date.now() - canvasTouchStart > 300) {
                     return; 
                 }
                 const activePoints = mainChart.getElementsAtEventForMode(e, 'nearest', { intersect: true }, false);
@@ -816,7 +746,7 @@
     });
 
     canvasEl.addEventListener('touchend', () => {
-        if (window.innerWidth <= 768) {
+        if (isMobileDevice) {
             setTimeout(() => {
                 mainChart.tooltip.setActiveElements([], {x:0, y:0});
                 mainChart.update();
@@ -824,6 +754,97 @@
         }
     });
 
+    /* =========================================
+       5. 🌟 彈性浮動時間軸選擇器 (Jelly Pill)
+       ========================================= */
+    const tfGroup = document.getElementById('tf-group');
+    const tfBg = document.getElementById('tf-active-bg');
+    const tfBtns = Array.from(document.querySelectorAll('.tf-btn'));
+    let tfIsDragging = false;
+    let tfStartX = 0;
+    let tfCurrentX = 0;
+    let activeTfIndex = 0; 
+    let initialBgLeft = 0;
+
+    function updateTfBg(index, animate = true) {
+        if(index < 0 || index >= tfBtns.length) return;
+        const btn = tfBtns[index];
+        if (!animate) {
+            tfBg.style.transition = 'none';
+        } else {
+            tfBg.style.transition = 'transform 0.4s cubic-bezier(0.25, 1.5, 0.5, 1), width 0.3s cubic-bezier(0.4, 0, 0.2, 1)';
+        }
+        tfBg.style.width = btn.offsetWidth + 'px';
+        tfBg.style.transform = `translateX(${btn.offsetLeft - 3}px)`; // 扣除 padding 補償
+    }
+
+    tfBtns.forEach((btn, index) => {
+        btn.addEventListener('click', () => {
+            tfBtns.forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            activeTfIndex = index;
+            updateTfBg(index);
+            updateChartTimeframe(btn.dataset.tf);
+        });
+    });
+
+    // 觸控果凍滑動邏輯
+    tfGroup.addEventListener('touchstart', (e) => {
+        if(!isMobileDevice) return;
+        tfIsDragging = true;
+        tfStartX = e.touches[0].clientX;
+        initialBgLeft = tfBtns[activeTfIndex].offsetLeft - 3;
+        tfBg.style.transition = 'none';
+    }, {passive: true});
+
+    tfGroup.addEventListener('touchmove', (e) => {
+        if(!tfIsDragging) return;
+        tfCurrentX = e.touches[0].clientX;
+        let diff = tfCurrentX - tfStartX;
+        
+        if (Math.abs(diff) > 5 && e.cancelable) e.preventDefault(); // 阻止上下滾動
+        
+        let stretch = 1 + Math.abs(diff) * 0.002;
+        let moveX = initialBgLeft + diff * 0.8; 
+        
+        tfBg.style.transform = `translateX(${moveX}px) scaleX(${Math.min(stretch, 1.3)})`;
+        tfBg.style.transformOrigin = diff > 0 ? "left center" : "right center";
+    }, {passive: false});
+
+    tfGroup.addEventListener('touchend', (e) => {
+        if(!tfIsDragging) return;
+        tfIsDragging = false;
+        
+        let diff = tfCurrentX === 0 ? 0 : tfCurrentX - tfStartX;
+        let centerPos = initialBgLeft + diff * 0.8 + (tfBtns[activeTfIndex].offsetWidth / 2);
+        
+        let minDiff = Infinity;
+        let closestIndex = activeTfIndex;
+        
+        tfBtns.forEach((btn, index) => {
+            let btnCenter = btn.offsetLeft - 3 + (btn.offsetWidth / 2);
+            let d = Math.abs(centerPos - btnCenter);
+            if(d < minDiff) {
+                minDiff = d;
+                closestIndex = index;
+            }
+        });
+        
+        tfBtns.forEach(b => b.classList.remove('active'));
+        tfBtns[closestIndex].classList.add('active');
+        activeTfIndex = closestIndex;
+        
+        updateTfBg(closestIndex, true);
+        updateChartTimeframe(tfBtns[closestIndex].dataset.tf);
+        tfCurrentX = 0;
+    });
+
+    // 初始化 Pill 位置
+    setTimeout(() => { updateTfBg(0, false); }, 100);
+
+    /* =========================================
+       6. 彈窗控制邏輯
+       ========================================= */
     function showPointDetail(label, color, timeLabel, value) {
         let universeName = '';
         if (label.includes('DYN_1')) universeName = 'DYN_1 (積極 AI)';
@@ -890,7 +911,7 @@
     function handleEnter(e) { if (e.key === 'Enter') askAI(); }
 
     /* =========================================
-       5. 終端機互動與問答邏輯
+       7. 終端機互動與問答邏輯
        ========================================= */
     async function askAI() {
         const input = document.getElementById('chat-input');
@@ -962,7 +983,7 @@
     }
 
     /* =========================================
-       6. 🌟 智慧防誤觸與側邊欄中斷判定機制
+       8. 🌟 防中斷側邊欄與廣角防呆解鎖
        ========================================= */
     const sidebarEl = document.getElementById('sidebar');
     const overlayEl = document.getElementById('sidebar-overlay');
@@ -983,9 +1004,9 @@
     }
 
     document.addEventListener('touchstart', (e) => {
-        if (window.innerWidth > 768) return; 
+        if (!isMobileDevice) return; 
         
-        const ignoreSwipeSelectors = ['canvas', '.tf-btn', '.modal-top-box'];
+        const ignoreSwipeSelectors = ['canvas', '.tf-btn', '.modal-top-box', '.jelly-slider'];
         if (e.target.closest(ignoreSwipeSelectors.join(', '))) {
             isDraggingMenu = false;
             return;
@@ -997,13 +1018,14 @@
         isDetermined = false;
 
         const isOpen = sidebarEl.classList.contains('open');
-        if (!isOpen && touchStartX > window.innerWidth * 0.5) {
+        // 🌟 將啟動區域擴大至左側 66% (三分之二)
+        if (!isOpen && touchStartX > window.innerWidth * 0.66) {
             isDraggingMenu = false; 
         }
     }, {passive: true});
 
     document.addEventListener('touchmove', (e) => {
-        if (!isDraggingMenu || window.innerWidth > 768) return;
+        if (!isDraggingMenu || !isMobileDevice) return;
         touchCurrentX = e.touches[0].clientX;
         const touchCurrentY = e.touches[0].clientY;
         const diffX = touchCurrentX - touchStartX;
@@ -1032,9 +1054,9 @@
         }
     }, {passive: false});
 
-    // 🌟 將收尾邏輯獨立成函數，以應對各種中斷情境
-    function handleSwipeEnd() {
-        if (!isDraggingMenu || window.innerWidth > 768) return;
+    // 🌟 獨立出 snapSidebar 處理所有中斷與放開的情境
+    function snapSidebar(e) {
+        if (!isDraggingMenu || !isMobileDevice) return;
         isDraggingMenu = false;
         sidebarEl.classList.remove('dragging');
         
@@ -1057,51 +1079,13 @@
         touchStartX = 0; touchStartY = 0; touchCurrentX = 0;
     }
 
-    document.addEventListener('touchend', handleSwipeEnd);
-    // 🌟 應對控制中心拉下、來電等中斷事件
-    document.addEventListener('touchcancel', handleSwipeEnd);
-    // 🌟 應對瀏覽器分頁切換凍結事件
-    document.addEventListener('visibilitychange', () => {
-        if (document.hidden && isDraggingMenu) handleSwipeEnd();
-    });
-
-    const detailModalBox = document.getElementById('detailModalBox');
-    let modalStartY = 0, modalCurrentY = 0, isDraggingModal = false;
-
-    detailModalBox.addEventListener('touchstart', (e) => {
-        modalStartY = e.touches[0].clientY;
-        isDraggingModal = true;
-        detailModalBox.style.transition = 'none'; 
-    }, {passive: true});
-
-    detailModalBox.addEventListener('touchmove', (e) => {
-        if (!isDraggingModal) return;
-        modalCurrentY = e.touches[0].clientY;
-        const diffY = modalCurrentY - modalStartY;
-        
-        if (diffY < 0) {
-            if(e.cancelable) e.preventDefault();
-            detailModalBox.style.transform = `translateY(${diffY}px)`;
-        }
-    }, {passive: false});
-
-    detailModalBox.addEventListener('touchend', (e) => {
-        if (!isDraggingModal) return;
-        isDraggingModal = false;
-        const diffY = modalCurrentY - modalStartY;
-        
-        detailModalBox.style.transition = 'transform 0.35s cubic-bezier(0.2, 0.8, 0.2, 1)';
-        
-        if (modalCurrentY !== 0 && diffY < -40) {
-            closeModal('detailModal');
-        } else {
-            detailModalBox.style.transform = 'translateY(0)';
-        }
-        modalStartY = 0; modalCurrentY = 0;
-    });
+    document.addEventListener('touchend', snapSidebar);
+    // 🌟 防呆：攔截 iOS 控制中心等中斷事件
+    document.addEventListener('touchcancel', snapSidebar); 
+    window.addEventListener('blur', snapSidebar);
 
     /* =========================================
-       7. 帳本過濾與本地時間翻譯
+       9. 帳本過濾與本地時間翻譯
        ========================================= */
     let allLedgerRecords = [];
 
@@ -1202,7 +1186,7 @@
     }
 
     /* =========================================
-       8. 標的戰況監控資料讀取器
+       10. 標的戰況監控資料讀取器
        ========================================= */
     async function loadStockStatus() {
         try {
@@ -1288,8 +1272,56 @@
         } catch (e) { }
     }
 
+    /* =========================================
+       11. 🌟 系統設定連動與持久化邏輯
+       ========================================= */
     function initSettingsPersistence() {
-        const switches = document.querySelectorAll('.setting-item input[type="checkbox"]');
+        const toggleShowNodes = document.getElementById('setting-nodes-show');
+        const sliderMaxNodes = document.getElementById('setting-nodes-max');
+        const inputMaxNodes = document.getElementById('setting-nodes-input');
+
+        // 綁定 UI 初始狀態
+        toggleShowNodes.checked = showChartNodes;
+        if (maxChartNodes === 'All') {
+            sliderMaxNodes.value = 201;
+            inputMaxNodes.value = 'All';
+        } else {
+            sliderMaxNodes.value = maxChartNodes;
+            inputMaxNodes.value = maxChartNodes;
+        }
+
+        // 獨立邏輯處理器：確保滑動與輸入連動
+        function updateNodeLimitUI(val) {
+            if (val === 'All' || val >= 201) {
+                sliderMaxNodes.value = 201;
+                inputMaxNodes.value = 'All';
+                maxChartNodes = 'All';
+            } else {
+                sliderMaxNodes.value = val;
+                inputMaxNodes.value = val;
+                maxChartNodes = val;
+            }
+            localStorage.setItem('SETTING_MAX_NODES', maxChartNodes);
+            updateChartTimeframe(); 
+        }
+
+        sliderMaxNodes.addEventListener('input', (e) => updateNodeLimitUI(e.target.value));
+        inputMaxNodes.addEventListener('change', (e) => {
+            let val = e.target.value;
+            if (val.toLowerCase() === 'all') val = 'All';
+            else val = parseInt(val);
+            if (isNaN(val) || val < 2) val = 60;
+            updateNodeLimitUI(val);
+        });
+        
+        toggleShowNodes.addEventListener('change', (e) => {
+            showChartNodes = e.target.checked;
+            localStorage.setItem('SETTING_SHOW_NODES', showChartNodes);
+            updateChartTimeframe();
+        });
+
+        // 其它原有開關設定
+        const switches = document.querySelectorAll('.setting-item input[type="checkbox"]:not(#setting-nodes-show)');
         switches.forEach((sw, idx) => {
             const storageKey = `CORE_SETTING_VAL_${idx}`;
             const savedState = localStorage.getItem(storageKey);
