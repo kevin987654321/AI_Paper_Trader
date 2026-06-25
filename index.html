@@ -103,12 +103,15 @@
         .chart-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; flex-shrink: 0; }
         .chart-wrapper { flex: 1; min-height: 0; position: relative; }
         
-        /* 🌟 時間軸彈性浮動選擇器 (JS 控制顏色) */
+        /* 彈性浮動選擇器 */
         .timeframe-selector { position: relative; display: flex; gap: 4px; background: rgba(0,0,0,0.4); padding: 3px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.03); overflow: hidden; touch-action: pan-y; }
-        .tf-active-bg { position: absolute; top: 3px; bottom: 3px; left: 0; background: rgba(255,255,255,0.12); border-radius: 4px; z-index: 1; }
-        .tf-btn { position: relative; z-index: 2; background: transparent; border: none; color: #555; padding: 5px 12px; border-radius: 4px; cursor: pointer; font-size: 11px; font-weight: bold; }
-
-        @keyframes breathe { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
+        .tf-active-bg { position: absolute; top: 3px; bottom: 3px; left: 0; background: rgba(255,255,255,0.12); border-radius: 4px; transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), width 0.3s cubic-bezier(0.4, 0, 0.2, 1); z-index: 1; }
+        .tf-btn { position: relative; z-index: 2; background: transparent; border: none; color: #555; padding: 5px 12px; border-radius: 4px; cursor: pointer; font-size: 11px; transition: color 0.2s; font-weight: bold; }
+        .tf-btn.active { color: #fff; }
+        
+        @keyframes breathe {
+            0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; }
+        }
         #ai-commander {
             position: relative; height: 190px; display: flex; flex-direction: column; flex-shrink: 0;
             background: rgba(10, 10, 10, 0.4); border-radius: 10px; backdrop-filter: blur(20px); border: none; margin-bottom: 5px;
@@ -168,30 +171,26 @@
         input:checked + .slider { background-color: var(--color-dyn1); box-shadow: 0 0 10px var(--color-dyn1); }
         input:checked + .slider:before { transform: translateX(20px); background-color: #000; }
 
-        /* 🌟 全新客製：透明霧面果凍物理滑桿 */
+        /* 🌟 極致果凍物理引擎滑桿：霧面毛玻璃圓球 */
         .jelly-slider-container { position: relative; width: 100%; height: 24px; display: flex; align-items: center; }
-        .jelly-slider-track { position: absolute; left: 0; right: 0; height: 6px; border-radius: 4px; background: rgba(255,255,255,0.08); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.15); pointer-events: none; }
+        .jelly-slider-track { position: absolute; left: 0; right: 0; height: 6px; border-radius: 4px; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.1); pointer-events: none; }
         .jelly-slider-thumb { 
-            position: absolute; top: 50%; left: 0; width: 22px; height: 22px; margin-top: -11px; 
+            position: absolute; top: 50%; left: 0; width: 18px; height: 18px; margin-top: -9px; 
             border-radius: 50%; 
-            background: rgba(255, 255, 255, 0.15); 
-            backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); 
-            border: 1px solid rgba(255, 255, 255, 0.4); 
-            box-shadow: 0 4px 10px rgba(0,0,0,0.3); 
-            pointer-events: none; z-index: 2; transform-origin: center center; 
+            background: rgba(255, 255, 255, 0.3); 
+            backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+            border: 1.5px solid rgba(255, 255, 255, 0.8);
+            box-shadow: 0 4px 10px rgba(0,0,0,0.2); 
+            pointer-events: none; z-index: 2; 
+            transition: transform 0.6s cubic-bezier(0.4, 2.5, 0.4, 0.9); /* 超彈力貝茲曲線 */
         }
-        /* 果凍回彈動畫定義 */
-        @keyframes jelly-bounce-r { 0% { transform: scaleX(1.3) scaleY(0.8); } 40% { transform: scaleX(0.85) scaleY(1.1); } 70% { transform: scaleX(1.05) scaleY(0.95); } 100% { transform: scaleX(1) scaleY(1); } }
-        @keyframes jelly-bounce-l { 0% { transform: scaleX(1.3) scaleY(0.8); } 40% { transform: scaleX(0.85) scaleY(1.1); } 70% { transform: scaleX(1.05) scaleY(0.95); } 100% { transform: scaleX(1) scaleY(1); } }
-        .bounce-r { animation: jelly-bounce-r 0.5s cubic-bezier(0.25, 1, 0.5, 1) forwards; transform-origin: right center !important; }
-        .bounce-l { animation: jelly-bounce-l 0.5s cubic-bezier(0.25, 1, 0.5, 1) forwards; transform-origin: left center !important; }
-
         .jelly-slider-input { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; z-index: 10; margin: 0; }
         .jelly-input { width: 45px; background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.1); color: #fff; padding: 4px; border-radius: 6px; text-align: center; font-family: monospace; font-size: 13px; transition: border-color 0.3s; }
         .jelly-input:focus { outline: none; border-color: var(--color-dyn2); }
-        .setting-item.disabled { opacity: 0.3; pointer-events: none; filter: grayscale(100%); }
+        
+        /* 關閉顯示節點時的鎖死灰階狀態 */
+        .setting-item.disabled { opacity: 0.25; pointer-events: none; filter: grayscale(100%); }
 
-        /* 高質感霧化背景 + 頂端跟手下拉彈窗 */
         .modal-overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100dvh;
             background: rgba(0, 0, 0, 0.3); z-index: 2000; display: none;
@@ -210,13 +209,10 @@
             display: flex; flex-direction: column;
         }
         .modal-title { font-size: 16px; font-weight: bold; border-bottom: 1px solid rgba(255,255,255,0.06); padding-bottom: 10px; color: #fff; margin-bottom: 15px; }
-        .modal-drag-bar { width: 36px; height: 5px; background: rgba(255,255,255,0.3); border-radius: 3px; margin: 15px auto 0 auto; cursor: grab; }
-
-        /* =========================================
-           📱 手機版專屬樣式
-           ========================================= */
-        #mobile-header { display: none; }
-        #sidebar-overlay { display: none; }
+        .modal-drag-bar {
+            width: 36px; height: 5px; background: rgba(255,255,255,0.3);
+            border-radius: 3px; margin: 15px auto 0 auto; cursor: grab;
+        }
 
         @media (max-width: 768px) {
             #mobile-header {
@@ -225,11 +221,20 @@
                 border-bottom: 1px solid rgba(255,255,255,0.06);
                 z-index: 50; position: absolute; top: 0; left: 0; width: 100%;
             }
-            .mobile-menu-btn { background: transparent; border: none; color: #fff; font-size: 20px; cursor: pointer; padding: 10px; margin-left: -10px; z-index: 2; }
-            .mobile-header-title { position: absolute; left: 50%; transform: translateX(-50%); font-weight: 900; letter-spacing: 3px; font-size: 16px; color: #fff; cursor: pointer; white-space: nowrap; z-index: 1; }
+            .mobile-menu-btn {
+                background: transparent; border: none; color: #fff; font-size: 20px; cursor: pointer; padding: 10px; margin-left: -10px; z-index: 2;
+            }
+            .mobile-header-title {
+                position: absolute; left: 50%; transform: translateX(-50%);
+                font-weight: 900; letter-spacing: 3px; font-size: 16px; color: #fff; cursor: pointer;
+                white-space: nowrap; z-index: 1;
+            }
             .mobile-reload-btn { width: 50px; height: 100%; cursor: pointer; z-index: 2; margin-right: -10px; }
             
-            #sidebar-overlay.active { display: block; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 900; backdrop-filter: blur(2px); }
+            #sidebar-overlay.active {
+                display: block; position: fixed; inset: 0; background: rgba(0,0,0,0.6);
+                z-index: 900; backdrop-filter: blur(2px);
+            }
             #sidebar {
                 position: fixed; left: 0; top: 0; bottom: 0; height: 100dvh;
                 transform: translateX(-100%); transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
@@ -238,18 +243,24 @@
             #sidebar.open { transform: translateX(0); }
             #sidebar.dragging { transition: none; }
             
-            .view-section { top: 60px; height: calc(100dvh - 60px); padding: 15px; padding-bottom: max(15px, env(safe-area-inset-bottom)); }
+            .view-section {
+                top: 60px; height: calc(100dvh - 60px); 
+                padding: 15px; padding-bottom: max(15px, env(safe-area-inset-bottom));
+            }
             .stat-grid { grid-template-columns: repeat(2, 1fr); height: auto; margin-bottom: 5px; }
             .stat-card { padding: 12px; }
             .stat-value { font-size: 16px; }
             .chart-header { flex-direction: column; align-items: flex-start; gap: 10px; }
+            
             #ai-commander { height: 210px; } 
             .chat-display { padding: 10px 15px; }
             .chat-input-area { flex-direction: row; padding: 10px 15px; border-radius: 0 0 10px 10px; }
             .chat-input-area input { flex: 1; margin-bottom: 0; padding: 10px 12px; }
             .send-btn { width: 75px; padding: 0; font-size: 11px; flex-shrink: 0; }
+            
             .gene-grid { grid-template-columns: 1fr; }
             .stock-grid { grid-template-columns: 1fr; }
+            
             .records-table-container { padding: 10px 5px; overflow-x: hidden; }
             .records-table-container table { font-size: 11px; table-layout: auto; width: 100%; }
             .records-table-container th, .records-table-container td { padding: 10px 4px; white-space: nowrap; }
@@ -305,7 +316,7 @@
                 <div style="font-weight: bold; font-size: 13px; letter-spacing: 1px;"><i class="fa-solid fa-chart-area"></i> 宇宙總資產趨勢 (NAV)</div>
                 <div class="timeframe-selector" id="tf-group">
                     <div class="tf-active-bg" id="tf-active-bg"></div>
-                    <button class="tf-btn" data-tf="1D">1D</button>
+                    <button class="tf-btn active" data-tf="1D">1D</button>
                     <button class="tf-btn" data-tf="1W">1W</button>
                     <button class="tf-btn" data-tf="1M">1M</button>
                     <button class="tf-btn" data-tf="3M">3M</button>
@@ -413,14 +424,14 @@
             <div class="glass-panel setting-item">
                 <div>
                     <div style="font-weight: bold; color: #fff;">Gemini 深度情緒解讀</div>
-                    <div style="font-size: 12px; color: #777; margin-top: 4px;">允許 AI 讀取新聞內文防止系統性崩盤。</div>
+                    <div style="font-size: 12px; color: #777; margin-top: 4px;">允許 AI 讀取新聞內文防止系統性崩盤 (消耗 API)。</div>
                 </div>
                 <label class="switch"><input type="checkbox" checked><span class="slider"></span></label>
             </div>
             <div class="glass-panel setting-item">
                 <div>
                     <div style="font-weight: bold; color: #fff;">強制平倉斷路器</div>
-                    <div style="font-size: 12px; color: #777; margin-top: 4px;">當大盤單日跌幅超過 5% 時，強制清空庫存。</div>
+                    <div style="font-size: 12px; color: #777; margin-top: 4px;">當大盤單日跌幅超過 5% 時，強制清空所有宇宙庫存。</div>
                 </div>
                 <label class="switch"><input type="checkbox"><span class="slider"></span></label>
             </div>
@@ -437,12 +448,15 @@
 </div>
 
 <script>
+    /* =========================================
+       0. 節點設定初始化
+       ========================================= */
     const isMobileDevice = window.innerWidth <= 768;
     let showChartNodes = localStorage.getItem('SETTING_SHOW_NODES') !== 'false';
     let maxChartNodes = localStorage.getItem('SETTING_MAX_NODES') || (isMobileDevice ? 30 : 60);
 
     /* =========================================
-       1. 數據橋接與時間軸過濾
+       1. 數據橋接核心與真實時間戳記轉化
        ========================================= */
     let chartLabels = ['等待啟動'];
     let chartTimestamps = []; 
@@ -453,6 +467,7 @@
     if (typeof NAV_HISTORY !== 'undefined') {
         const currentYear = new Date().getFullYear();
         chartTimestamps = [];
+        
         chartLabels = NAV_HISTORY.labels.map(label => {
             const parts = label.split(' ');
             if(parts.length === 2) {
@@ -470,7 +485,10 @@
             chartTimestamps.push(Date.now());
             return label;
         });
-        d1 = NAV_HISTORY.DYN_1; d2 = NAV_HISTORY.DYN_2; s1 = NAV_HISTORY.STA_1; s2 = NAV_HISTORY.STA_2;
+        d1 = NAV_HISTORY.DYN_1;
+        d2 = NAV_HISTORY.DYN_2; 
+        s1 = NAV_HISTORY.STA_1; 
+        s2 = NAV_HISTORY.STA_2;
     }
 
     document.getElementById('val-dyn1').innerText = "$ " + d1[d1.length - 1].toLocaleString(undefined, {maximumFractionDigits: 0});
@@ -478,6 +496,7 @@
     document.getElementById('val-sta1').innerText = "$ " + s1[s1.length - 1].toLocaleString(undefined, {maximumFractionDigits: 0});
     document.getElementById('val-sta2').innerText = "$ " + s2[s2.length - 1].toLocaleString(undefined, {maximumFractionDigits: 0});
 
+    // 🌟 智慧權重計算器
     function calculatePointRadii(datasetData) {
         if (!showChartNodes) return datasetData.map(() => 0);
         if (maxChartNodes === 'All') return datasetData.map(() => 3);
@@ -493,19 +512,21 @@
 
         for (let i = 0; i < len; i++) {
             if (i === 0 || i === len - 1) {
-                importance.push({ i, val: Infinity }); 
+                importance.push({ i, val: Infinity }); // 頭尾必留
             } else {
                 let diffPrev = Math.abs(datasetData[i] - datasetData[i-1]);
                 let diffNext = Math.abs(datasetData[i] - datasetData[i+1]);
                 if (diffPrev === 0 && diffNext === 0) {
-                    importance.push({ i, val: -1 }); // 剔除平坦點
+                    importance.push({ i, val: -1 }); // 平坦區間權重最低
                 } else {
-                    importance.push({ i, val: diffPrev + diffNext }); 
+                    importance.push({ i, val: diffPrev + diffNext }); // 依轉折幅度排定優先權
                 }
             }
         }
+
         importance.sort((a, b) => b.val - a.val);
         for (let k = 0; k < n; k++) radii[importance[k].i] = 3;
+
         return radii;
     }
 
@@ -517,13 +538,19 @@
         if (totalPoints === 0) return;
         
         let startIndex = 0;
+        
         if (chartTimestamps.length === totalPoints && currentGlobalTimeframe !== 'All' && currentGlobalTimeframe !== '1Y') {
             const latestTimeMs = chartTimestamps[totalPoints - 1]; 
+            
             if (currentGlobalTimeframe === '1D') {
                 const latestDate = new Date(latestTimeMs);
                 const startOfDay = new Date(latestDate.getFullYear(), latestDate.getMonth(), latestDate.getDate()).getTime();
+                
                 for (let i = totalPoints - 1; i >= 0; i--) {
-                    if (chartTimestamps[i] < startOfDay) { startIndex = i + 1; break; }
+                    if (chartTimestamps[i] < startOfDay) {
+                        startIndex = i + 1;
+                        break;
+                    }
                 }
             } else {
                 let msLimit = Infinity;
@@ -534,7 +561,10 @@
                 }
                 if (msLimit !== Infinity) {
                     for (let i = totalPoints - 1; i >= 0; i--) {
-                        if (latestTimeMs - chartTimestamps[i] > msLimit) { startIndex = i + 1; break; }
+                        if (latestTimeMs - chartTimestamps[i] > msLimit) {
+                            startIndex = i + 1;
+                            break;
+                        }
                     }
                 }
             }
@@ -543,17 +573,27 @@
         mainChart.options.scales.x.ticks.maxTicksLimit = isMobileDevice ? 4 : (currentGlobalTimeframe === '1D' ? 8 : 6);
         mainChart.data.labels = chartLabels.slice(startIndex);
         
-        const updateDataset = (index, dataArr) => {
-            const sliced = dataArr.slice(startIndex);
-            mainChart.data.datasets[index].data = sliced;
-            mainChart.data.datasets[index].pointRadius = calculatePointRadii(sliced);
-        };
-        updateDataset(0, d1); updateDataset(1, d2); updateDataset(2, s1); updateDataset(3, s2);
+        const data1 = d1.slice(startIndex);
+        mainChart.data.datasets[0].data = data1;
+        mainChart.data.datasets[0].pointRadius = calculatePointRadii(data1);
+
+        const data2 = d2.slice(startIndex);
+        mainChart.data.datasets[1].data = data2;
+        mainChart.data.datasets[1].pointRadius = calculatePointRadii(data2);
+
+        const data3 = s1.slice(startIndex);
+        mainChart.data.datasets[2].data = data3;
+        mainChart.data.datasets[2].pointRadius = calculatePointRadii(data3);
+
+        const data4 = s2.slice(startIndex);
+        mainChart.data.datasets[3].data = data4;
+        mainChart.data.datasets[3].pointRadius = calculatePointRadii(data4);
+
         mainChart.update();
     }
 
     /* =========================================
-       2. 游標與切換邏輯
+       2. 游標追蹤 & 頁面切換
        ========================================= */
     document.addEventListener('mousemove', e => {
         document.querySelectorAll('.glass-panel, .glass-title-text').forEach(el => {
@@ -568,24 +608,28 @@
         menuItem.classList.add('active');
         document.querySelectorAll('.view-section').forEach(el => el.classList.remove('active'));
         document.getElementById(viewId).classList.add('active');
+        
         if (isMobileDevice && sidebarEl.classList.contains('open')) toggleSidebar();
         if (viewId === 'view-records') renderLedgerTable();
         if (viewId === 'view-stocks') loadStockStatus();
     }
 
     /* =========================================
-       3. 矩陣狀態機邏輯 & 長按事件
+       3. 宇宙按鈕邏輯
        ========================================= */
     let selectedUniverses = ['DYN_1', 'DYN_2', 'STA_1', 'STA_2'];
-    let cardLongPressed = false; let cardTimer = null;
+    let cardLongPressed = false;
+    let cardTimer = null;
 
+    const uKeys = ['DYN_1', 'DYN_2', 'STA_1', 'STA_2'];
     uKeys.forEach(u => {
         const el = document.getElementById(`card-${u}`);
-        const startPress = () => {
+        const startPress = (e) => {
             cardLongPressed = false;
             cardTimer = setTimeout(() => { cardLongPressed = true; showUniverseOverallDetail(u); }, 500);
         };
         const cancelPress = () => { if(cardTimer) clearTimeout(cardTimer); };
+        
         el.addEventListener('touchstart', startPress, {passive: true});
         el.addEventListener('touchend', cancelPress);
         el.addEventListener('touchmove', cancelPress, {passive: true});
@@ -596,31 +640,44 @@
 
     function handleCardClick(universe, event) {
         if (cardLongPressed) return; 
+
         if (isMobileDevice || event.ctrlKey || event.metaKey) {
-            if (selectedUniverses.length === 4) selectedUniverses = [universe];
-            else if (selectedUniverses.includes(universe)) {
+            if (selectedUniverses.length === 4) {
+                selectedUniverses = [universe];
+            } else if (selectedUniverses.includes(universe)) {
                 selectedUniverses = selectedUniverses.filter(u => u !== universe);
                 if (selectedUniverses.length === 0) selectedUniverses = Object.keys(U_COLORS);
-            } else selectedUniverses.push(universe);
+            } else {
+                selectedUniverses.push(universe);
+            }
         } else {
-            if (selectedUniverses.length === 1 && selectedUniverses[0] === universe) selectedUniverses = Object.keys(U_COLORS);
-            else selectedUniverses = [universe];
+            if (selectedUniverses.length === 1 && selectedUniverses[0] === universe) {
+                selectedUniverses = Object.keys(U_COLORS);
+            } else {
+                selectedUniverses = [universe];
+            }
         }
-        updateUIState(); renderLedgerTable(); 
+        updateUIState();
+        renderLedgerTable(); 
     }
 
     function updateUIState() {
-        Object.keys(U_COLORS).forEach(u => {
+        const allU = Object.keys(U_COLORS);
+        allU.forEach(u => {
             const card = document.getElementById(`card-${u}`);
-            if (selectedUniverses.includes(u)) { card.classList.add('active-focus'); card.classList.remove('dimmed'); } 
-            else { card.classList.remove('active-focus'); card.classList.add('dimmed'); }
+            if (selectedUniverses.includes(u)) {
+                card.classList.add('active-focus'); card.classList.remove('dimmed');
+            } else {
+                card.classList.remove('active-focus'); card.classList.add('dimmed');
+            }
         });
-        Object.keys(U_COLORS).forEach((u, idx) => mainChart.setDatasetVisibility(idx, selectedUniverses.includes(u)));
+        allU.forEach((u, idx) => mainChart.setDatasetVisibility(idx, selectedUniverses.includes(u)));
         mainChart.update();
 
         const commander = document.getElementById('ai-commander');
         const input = document.getElementById('chat-input');
         const title = document.getElementById('terminal-title');
+        
         if (selectedUniverses.length === 1) {
             const color = U_COLORS[selectedUniverses[0]];
             commander.style.setProperty('--commander-gradient', color);
@@ -638,7 +695,7 @@
     }
 
     /* =========================================
-       4. 🌟 Chart.js Z-index 突破與預覽邏輯
+       4. 🌟 終極 Chart.js 防裁切與互動機制
        ========================================= */
     const chartData = {
         labels: chartLabels,
@@ -650,56 +707,39 @@
         ]
     };
 
-    // 🌟 客製化 Plugin: 將節點強制畫在所有圖層的最上方
-    const topNodesPlugin = {
-        id: 'topNodes',
-        afterDatasetsDraw(chart) {
-            const ctx = chart.ctx;
-            chart.data.datasets.forEach((dataset, i) => {
-                const meta = chart.getDatasetMeta(i);
-                if (!meta.hidden) {
-                    meta.data.forEach((element) => {
-                        if (element.options.radius > 0) {
-                            element.draw(ctx); // 重新繪製圓點覆蓋上去
-                        }
-                    });
-                }
-            });
-        }
-    };
-
     const canvasEl = document.getElementById('mainChart');
     let isPointerDown = false;
     let pointerDownTime = 0;
     
-    // 按住才會顯示預覽
+    // 綁定手勢，Hold-to-Preview
     canvasEl.addEventListener('mousedown', () => { isPointerDown = true; pointerDownTime = Date.now(); mainChart.update(); });
     window.addEventListener('mouseup', () => { isPointerDown = false; mainChart.tooltip.setActiveElements([], {x:0, y:0}); mainChart.update(); });
+    
     canvasEl.addEventListener('touchstart', () => { isPointerDown = true; pointerDownTime = Date.now(); }, {passive: true});
     
-    // 🌟 手機版放開瞬間消除所有特效
-    function clearMobileChartFocus() {
+    // 🌟 手機版放開後強制清除 hover 狀態，圓圈立即縮回
+    window.addEventListener('touchend', () => { 
         isPointerDown = false; 
-        if (isMobileDevice) { 
-            mainChart.setActiveElements([]); // 清除節點放大
-            mainChart.tooltip.setActiveElements([], {x:0, y:0}); // 清除預覽黑框
+        if (isMobileDevice && mainChart) { 
+            mainChart.setActiveElements([]); 
+            mainChart.tooltip.setActiveElements([], {x:0, y:0}); 
             mainChart.update(); 
         } 
-    }
-    window.addEventListener('touchend', clearMobileChartFocus);
-    window.addEventListener('touchcancel', clearMobileChartFocus);
+    });
 
     const mainChart = new Chart(canvasEl.getContext('2d'), {
         type: 'line', data: chartData,
-        plugins: [topNodesPlugin], // 註冊 Z-index 突破外掛
         options: {
             responsive: true, maintainAspectRatio: false,
+            // 🌟 加入 clip: false 與 padding，確保畫布邊緣的點不會被切西瓜
+            clip: false, 
+            layout: { padding: { left: 10, right: 10, top: 10, bottom: 10 } },
             interaction: { mode: 'index', intersect: false },
             plugins: { 
                 legend: { display: false }, 
                 tooltip: { 
                     backgroundColor: 'rgba(0,0,0,0.8)', titleColor: '#fff', padding: 12,
-                    filter: function() { return isPointerDown; } // 僅按住時顯示
+                    filter: function() { return isPointerDown; } // 僅按住才顯示黑框
                 } 
             },
             scales: {
@@ -708,7 +748,7 @@
             },
             onClick: (e, elements) => {
                 let duration = Date.now() - pointerDownTime;
-                if (duration < 300) { // 短按觸發詳情
+                if (duration < 300) { 
                     const activePoints = mainChart.getElementsAtEventForMode(e, 'nearest', { intersect: true }, false);
                     if (activePoints.length > 0) {
                         const dsIndex = activePoints[0].datasetIndex;
@@ -722,34 +762,45 @@
     });
 
     /* =========================================
-       5. 🌟 彈性時間軸選擇器 (Lerp 動畫與動態字體色)
+       5. 🌟 就近點亮文字的時間軸選擇器
        ========================================= */
     const tfGroup = document.getElementById('tf-group');
     const tfBg = document.getElementById('tf-active-bg');
     const tfBtns = Array.from(document.querySelectorAll('.tf-btn'));
     let tfIsDragging = false;
-    let tfStartX = 0; let tfStartPillX = 0;
-    
-    // 動態狀態變數
-    let currentPillX = 0; let targetPillX = 0;
-    let currentPillWidth = 0; let targetPillWidth = 0;
-    let currentPillStretch = 1; let targetPillStretch = 1;
-    let pillOrigin = 'center'; let activeTfIndex = 0; 
+    let tfStartX = 0;
+    let tfCurrentX = 0;
+    let activeTfIndex = 0; 
+    let initialBgLeft = 0;
 
-    // 初始化位置
-    setTimeout(() => {
-        const activeBtn = tfBtns.find(b => b.dataset.tf === currentGlobalTimeframe) || tfBtns[0];
-        activeTfIndex = tfBtns.indexOf(activeBtn);
-        currentPillX = targetPillX = activeBtn.offsetLeft;
-        currentPillWidth = targetPillWidth = activeBtn.offsetWidth;
-        animatePillLoop(); // 啟動無限渲染迴圈
-    }, 100);
+    // 🌟 動態更新文字白光的邏輯，依據色塊中心點與各按鈕中心點的距離
+    function updateTfTextHighlight(bgCenterX) {
+        let minDiff = Infinity;
+        let closestIndex = activeTfIndex;
+        tfBtns.forEach((btn, index) => {
+            let btnCenter = btn.offsetLeft + (btn.offsetWidth / 2);
+            let d = Math.abs(bgCenterX - btnCenter);
+            if(d < minDiff) { minDiff = d; closestIndex = index; }
+        });
+        tfBtns.forEach((b, i) => {
+            if(i === closestIndex) b.classList.add('active');
+            else b.classList.remove('active');
+        });
+    }
+
+    function updateTfBg(index, animate = true) {
+        if(index < 0 || index >= tfBtns.length) return;
+        const btn = tfBtns[index];
+        tfBg.style.transition = animate ? 'transform 0.4s cubic-bezier(0.25, 1.5, 0.5, 1), width 0.3s cubic-bezier(0.4, 0, 0.2, 1)' : 'none';
+        tfBg.style.width = btn.offsetWidth + 'px';
+        tfBg.style.transform = `translateX(${btn.offsetLeft}px)`; 
+        updateTfTextHighlight(btn.offsetLeft + (btn.offsetWidth / 2));
+    }
 
     tfBtns.forEach((btn, index) => {
         btn.addEventListener('click', () => {
             activeTfIndex = index;
-            targetPillX = btn.offsetLeft;
-            targetPillWidth = btn.offsetWidth;
+            updateTfBg(index);
             updateChartTimeframe(btn.dataset.tf);
         });
     });
@@ -758,26 +809,34 @@
         if(!isMobileDevice) return;
         tfIsDragging = true;
         tfStartX = e.touches[0].clientX;
-        tfStartPillX = currentPillX;
+        initialBgLeft = tfBtns[activeTfIndex].offsetLeft;
+        tfBg.style.transition = 'none';
     }, {passive: true});
 
     tfGroup.addEventListener('touchmove', (e) => {
         if(!tfIsDragging) return;
-        let diff = e.touches[0].clientX - tfStartX;
+        tfCurrentX = e.touches[0].clientX;
+        let diff = tfCurrentX - tfStartX;
         if (Math.abs(diff) > 5 && e.cancelable) e.preventDefault(); 
         
-        targetPillX = tfStartPillX + diff;
-        targetPillStretch = 1 + Math.abs(diff) * 0.003;
-        pillOrigin = diff > 0 ? "left center" : "right center"; // 拖動反方向為錨點
+        let stretch = 1 + Math.abs(diff) * 0.002;
+        let moveX = initialBgLeft + diff * 0.8; 
+        
+        tfBg.style.transform = `translateX(${moveX}px) scaleX(${Math.min(stretch, 1.3)})`;
+        tfBg.style.transformOrigin = diff > 0 ? "left center" : "right center";
+        
+        // 即時判斷文字點亮
+        let bgVisualCenter = moveX + (tfBtns[activeTfIndex].offsetWidth / 2);
+        updateTfTextHighlight(bgVisualCenter);
     }, {passive: false});
 
-    tfGroup.addEventListener('touchend', () => {
+    tfGroup.addEventListener('touchend', (e) => {
         if(!tfIsDragging) return;
         tfIsDragging = false;
-        targetPillStretch = 1;
         
-        // 尋找放開時最近的按鈕
-        let centerPos = currentPillX + currentPillWidth / 2;
+        let diff = tfCurrentX === 0 ? 0 : tfCurrentX - tfStartX;
+        let centerPos = initialBgLeft + diff * 0.8 + (tfBtns[activeTfIndex].offsetWidth / 2);
+        
         let minDiff = Infinity;
         let closestIndex = activeTfIndex;
         
@@ -788,42 +847,12 @@
         });
         
         activeTfIndex = closestIndex;
-        const activeBtn = tfBtns[closestIndex];
-        targetPillX = activeBtn.offsetLeft;
-        targetPillWidth = activeBtn.offsetWidth;
-        updateChartTimeframe(activeBtn.dataset.tf);
+        updateTfBg(closestIndex, true);
+        updateChartTimeframe(tfBtns[closestIndex].dataset.tf);
+        tfCurrentX = 0;
     });
 
-    // 🌟 獨立 Render Loop：完美同步色塊物理與文字顏色漸變
-    function animatePillLoop() {
-        if (!tfIsDragging) {
-            currentPillX += (targetPillX - currentPillX) * 0.25;
-            currentPillWidth += (targetPillWidth - currentPillWidth) * 0.25;
-            currentPillStretch += (1 - currentPillStretch) * 0.2;
-        } else {
-            currentPillX = targetPillX;
-            currentPillWidth = targetPillWidth;
-            currentPillStretch = targetPillStretch;
-        }
-
-        tfBg.style.transformOrigin = pillOrigin;
-        tfBg.style.transform = `translateX(${currentPillX}px) scaleX(${currentPillStretch})`;
-        tfBg.style.width = `${currentPillWidth}px`;
-
-        // 計算並設定距離最近的文字為白色
-        const pillCenter = currentPillX + currentPillWidth / 2;
-        tfBtns.forEach((btn) => {
-            const btnCenter = btn.offsetLeft + btn.offsetWidth / 2;
-            const dist = Math.abs(pillCenter - btnCenter);
-            const maxDist = btn.offsetWidth * 0.8;
-            let ratio = 1 - Math.min(dist / maxDist, 1);
-            ratio = Math.pow(ratio, 2); // 讓變色更銳利
-            let colorVal = Math.floor(85 + (170 * ratio)); // 85(#555) -> 255(#fff)
-            btn.style.color = `rgb(${colorVal}, ${colorVal}, ${colorVal})`;
-        });
-
-        requestAnimationFrame(animatePillLoop);
-    }
+    setTimeout(() => { updateTfBg(0, false); }, 100);
 
     /* =========================================
        6. 彈窗控制邏輯
@@ -966,12 +995,12 @@
     }
 
     /* =========================================
-       8. 側邊欄防呆與擴大判定
+       8. 廣角防呆側邊欄 
        ========================================= */
     const sidebarEl = document.getElementById('sidebar');
     const overlayEl = document.getElementById('sidebar-overlay');
-    let smTouchStartX = 0; let smTouchStartY = 0; 
-    let smTouchCurrentX = 0; let smIsDraggingMenu = false; let smIsDetermined = false;
+    let sStartX = 0; let sStartY = 0; 
+    let sCurrentX = 0; let sIsDragging = false; let sIsDetermined = false;
     
     const SIDEBAR_WIDTH = 260; 
     const SWIPE_THRESHOLD = SIDEBAR_WIDTH * 0.25; 
@@ -989,33 +1018,26 @@
     document.addEventListener('touchstart', (e) => {
         if (!isMobileDevice) return; 
         
-        const ignoreSwipeSelectors = ['canvas', '.tf-btn', '.modal-top-box', '.jelly-slider-container'];
+        const ignoreSwipeSelectors = ['canvas', '.tf-btn', '.modal-top-box', '.jelly-slider-input', '.jelly-slider-container'];
         if (e.target.closest(ignoreSwipeSelectors.join(', '))) {
-            smIsDraggingMenu = false;
-            return;
+            sIsDragging = false; return;
         }
 
-        smTouchStartX = e.touches[0].clientX;
-        smTouchStartY = e.touches[0].clientY;
-        smIsDraggingMenu = true;
-        smIsDetermined = false;
+        sStartX = e.touches[0].clientX; sStartY = e.touches[0].clientY;
+        sIsDragging = true; sIsDetermined = false;
 
         const isOpen = sidebarEl.classList.contains('open');
-        if (!isOpen && smTouchStartX > window.innerWidth * 0.66) {
-            smIsDraggingMenu = false; 
-        }
+        if (!isOpen && sStartX > window.innerWidth * 0.66) { sIsDragging = false; }
     }, {passive: true});
 
     document.addEventListener('touchmove', (e) => {
-        if (!smIsDraggingMenu || !isMobileDevice) return;
-        smTouchCurrentX = e.touches[0].clientX;
-        const touchCurrentY = e.touches[0].clientY;
-        const diffX = smTouchCurrentX - smTouchStartX;
-        const diffY = touchCurrentY - smTouchStartY;
+        if (!sIsDragging || !isMobileDevice) return;
+        sCurrentX = e.touches[0].clientX; const sCurrentY = e.touches[0].clientY;
+        const diffX = sCurrentX - sStartX; const diffY = sCurrentY - sStartY;
 
-        if (!smIsDetermined) {
-            if (Math.abs(diffX) > Math.abs(diffY)) { smIsDetermined = true; } 
-            else { smIsDraggingMenu = false; return; }
+        if (!sIsDetermined) {
+            if (Math.abs(diffX) > Math.abs(diffY)) sIsDetermined = true; 
+            else { sIsDragging = false; return; }
         }
 
         const isOpen = sidebarEl.classList.contains('open');
@@ -1031,27 +1053,24 @@
     }, {passive: false});
 
     function snapSidebar() {
-        if (!smIsDraggingMenu || !isMobileDevice) return;
-        smIsDraggingMenu = false;
-        sidebarEl.classList.remove('dragging');
+        if (!sIsDragging || !isMobileDevice) return;
+        sIsDragging = false; sidebarEl.classList.remove('dragging');
         
-        const diffX = smTouchCurrentX - smTouchStartX;
+        const diffX = sCurrentX - sStartX;
+        const absDiff = Math.abs(diffX);
         const isOpen = sidebarEl.classList.contains('open');
 
-        if (smTouchCurrentX !== 0) {
-            if (!isOpen && diffX > SWIPE_THRESHOLD) {
-                sidebarEl.classList.add('open'); overlayEl.classList.add('active');
-            } else if (isOpen && diffX < -SWIPE_THRESHOLD) {
-                sidebarEl.classList.remove('open'); overlayEl.classList.remove('active');
-            }
+        if (sCurrentX !== 0) {
+            if (!isOpen && diffX > SWIPE_THRESHOLD) { sidebarEl.classList.add('open'); overlayEl.classList.add('active'); } 
+            else if (isOpen && diffX < 0 && absDiff > SWIPE_THRESHOLD) { sidebarEl.classList.remove('open'); overlayEl.classList.remove('active'); }
         }
         sidebarEl.style.transform = ''; 
-        smTouchStartX = 0; smTouchStartY = 0; smTouchCurrentX = 0;
+        sStartX = 0; sStartY = 0; sCurrentX = 0;
     }
 
     document.addEventListener('touchend', snapSidebar);
     document.addEventListener('touchcancel', snapSidebar); 
-    window.addEventListener('blur', snapSidebar);          
+    window.addEventListener('blur', snapSidebar);
 
     /* =========================================
        9. 帳本過濾與本地時間翻譯
@@ -1183,6 +1202,8 @@
                     <div class="stock-universe-list">
                 `;
                 
+                const uKeys = ['DYN_1', 'DYN_2', 'STA_1', 'STA_2'];
+                
                 uKeys.forEach(u => {
                     const uData = info.universes[u];
                     if (!uData) return;
@@ -1240,7 +1261,7 @@
     }
 
     /* =========================================
-       11. 🌟 真・果凍物理引擎滑桿與設定持久化
+       11. 🌟 終極果凍物理引擎滑桿
        ========================================= */
     function initSettingsPersistence() {
         const toggleShowNodes = document.getElementById('setting-nodes-show');
@@ -1249,31 +1270,21 @@
         const sliderThumb = document.getElementById('jelly-slider-thumb');
         const nodeSettingsWrapper = document.getElementById('node-settings-wrapper');
 
-        // 綁定 UI 初始狀態
         toggleShowNodes.checked = showChartNodes;
-        if (maxChartNodes === 'All') {
-            sliderMaxNodes.value = 201;
-            inputMaxNodes.value = 'All';
-        } else {
-            sliderMaxNodes.value = maxChartNodes;
-            inputMaxNodes.value = maxChartNodes;
-        }
+        if (maxChartNodes === 'All') { sliderMaxNodes.value = 201; inputMaxNodes.value = 'All'; } 
+        else { sliderMaxNodes.value = maxChartNodes; inputMaxNodes.value = maxChartNodes; }
 
-        // 連動灰階鎖死狀態
         function updateNodeSettingsState() {
             if (toggleShowNodes.checked) {
                 nodeSettingsWrapper.classList.remove('disabled');
-                sliderMaxNodes.disabled = false;
-                inputMaxNodes.disabled = false;
+                sliderMaxNodes.disabled = false; inputMaxNodes.disabled = false;
             } else {
                 nodeSettingsWrapper.classList.add('disabled');
-                sliderMaxNodes.disabled = true;
-                inputMaxNodes.disabled = true;
+                sliderMaxNodes.disabled = true; inputMaxNodes.disabled = true;
             }
         }
         updateNodeSettingsState();
 
-        // 更新儲存與圖表
         function updateNodeLimitUI(val) {
             if (val === 'All' || val >= 201) {
                 sliderMaxNodes.value = 201; inputMaxNodes.value = 'All'; maxChartNodes = 'All';
@@ -1284,68 +1295,53 @@
             updateChartTimeframe(); 
         }
 
-        // 🌟 真・果凍物理引擎 (速度追蹤尾巴拉長 + 放開震動回彈)
+        // 果凍物理變形引擎：即時運算拖曳速度決定拉伸幅度
         let lastVal = sliderMaxNodes.value;
         let lastTime = Date.now();
         let isDraggingSlider = false;
-        let lastVelocity = 0;
+        let jellySpringTimer = null;
 
         function updateSliderVisual() {
             const min = 2, max = 201;
             const val = parseFloat(sliderMaxNodes.value);
             const percent = (val - min) / (max - min);
             const containerWidth = sliderMaxNodes.offsetWidth;
-            sliderThumb.style.left = `${percent * (containerWidth - 22)}px`;
+            sliderThumb.style.left = `${percent * (containerWidth - 18)}px`;
         }
 
-        sliderMaxNodes.addEventListener('mousedown', () => { isDraggingSlider = true; sliderThumb.classList.remove('bounce-r', 'bounce-l'); });
-        sliderMaxNodes.addEventListener('touchstart', () => { isDraggingSlider = true; sliderThumb.classList.remove('bounce-r', 'bounce-l'); }, {passive: true});
+        sliderMaxNodes.addEventListener('mousedown', () => { isDraggingSlider = true; });
+        sliderMaxNodes.addEventListener('touchstart', () => { isDraggingSlider = true; }, {passive: true});
         
-        function stopSliderDrag() {
-            if(isDraggingSlider) {
-                isDraggingSlider = false;
-                sliderThumb.style.transition = 'none';
-                sliderThumb.style.transform = 'none'; 
-                // 依據最後慣性方向觸發果凍回彈 CSS Animation
-                if (lastVelocity > 0) sliderThumb.classList.add('bounce-r');
-                else if (lastVelocity < 0) sliderThumb.classList.add('bounce-l');
-                lastVelocity = 0;
-            }
-        }
-        window.addEventListener('mouseup', stopSliderDrag);
-        window.addEventListener('touchend', stopSliderDrag);
+        const stopDrag = () => { if(isDraggingSlider) { isDraggingSlider = false; sliderThumb.style.transform = 'scale(1, 1)'; }};
+        window.addEventListener('mouseup', stopDrag);
+        window.addEventListener('touchend', stopDrag);
 
         sliderMaxNodes.addEventListener('input', (e) => {
             updateSliderVisual();
             updateNodeLimitUI(e.target.value);
             
-            if (isDraggingSlider) {
-                sliderThumb.classList.remove('bounce-r', 'bounce-l');
-                const now = Date.now();
-                const dt = Math.max(now - lastTime, 1);
-                const dv = e.target.value - lastVal;
-                let velocity = dv / dt; 
-                lastVelocity = velocity;
-                
-                // 拖曳越快，尾巴拉越長，本體稍微變細
-                let stretch = 1 + Math.min(Math.abs(velocity) * 1.0, 0.6); 
-                let squash = 1 - Math.min(Math.abs(velocity) * 0.4, 0.3);  
-                
-                sliderThumb.style.transition = 'none';
-                // 向右拉時頭在右，尾巴向左伸長
-                sliderThumb.style.transformOrigin = velocity > 0 ? "right center" : "left center";
-                sliderThumb.style.transform = `scaleX(${stretch}) scaleY(${squash})`;
+            const now = Date.now();
+            const dt = Math.max(now - lastTime, 1);
+            const dv = e.target.value - lastVal;
+            let velocity = dv / dt; 
+            
+            // 計算尾部拉長的物理拉伸量
+            let speed = Math.abs(velocity);
+            let stretch = 1 + Math.min(speed * 0.5, 0.8); 
+            let squash = 1 - Math.min(speed * 0.15, 0.4); 
+            
+            sliderThumb.style.transition = 'none'; 
+            sliderThumb.style.transformOrigin = velocity > 0 ? "right center" : "left center";
+            sliderThumb.style.transform = `scaleX(${stretch}) scaleY(${squash})`;
 
-                lastVal = e.target.value; lastTime = now;
-                
-                clearTimeout(sliderThumb.resetTimer);
-                sliderThumb.resetTimer = setTimeout(() => {
-                    if (isDraggingSlider) {
-                        sliderThumb.style.transition = 'transform 0.3s cubic-bezier(0.25, 1, 0.5, 1)';
-                        sliderThumb.style.transform = `scaleX(1) scaleY(1)`;
-                    }
-                }, 80);
-            }
+            lastVal = e.target.value; lastTime = now;
+            
+            clearTimeout(jellySpringTimer);
+            jellySpringTimer = setTimeout(() => {
+                // 放慢或停止時的果凍回彈動畫
+                sliderThumb.style.transition = 'transform 0.6s cubic-bezier(0.4, 2.5, 0.4, 0.9)'; 
+                sliderThumb.style.transform = 'scale(1, 1)';
+            }, 40); 
         });
         
         setTimeout(updateSliderVisual, 100);
@@ -1356,15 +1352,13 @@
             if (val.toLowerCase() === 'all') val = 'All';
             else val = parseInt(val);
             if (isNaN(val) || val < 2) val = 60;
-            updateNodeLimitUI(val);
-            updateSliderVisual();
+            updateNodeLimitUI(val); updateSliderVisual();
         });
         
         toggleShowNodes.addEventListener('change', (e) => {
             showChartNodes = e.target.checked;
             localStorage.setItem('SETTING_SHOW_NODES', showChartNodes);
-            updateNodeSettingsState();
-            updateChartTimeframe();
+            updateNodeSettingsState(); updateChartTimeframe();
         });
 
         const switches = document.querySelectorAll('.setting-item input[type="checkbox"]:not(#setting-nodes-show)');
