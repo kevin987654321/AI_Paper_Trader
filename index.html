@@ -104,7 +104,7 @@
         .chart-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; flex-shrink: 0; }
         .chart-wrapper { flex: 1; min-height: 0; position: relative; }
         
-        /* 時間軸彈性浮動選擇器 (Jelly Pill) */
+        /* 🌟 時間軸彈性浮動選擇器 (精準置中) */
         .timeframe-selector { position: relative; display: flex; gap: 4px; background: rgba(0,0,0,0.4); padding: 3px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.03); overflow: hidden; touch-action: pan-y; }
         .tf-active-bg { position: absolute; top: 3px; bottom: 3px; left: 0; background: rgba(255,255,255,0.12); border-radius: 4px; transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), width 0.3s cubic-bezier(0.4, 0, 0.2, 1); z-index: 1; }
         .tf-btn { position: relative; z-index: 2; background: transparent; border: none; color: #555; padding: 5px 12px; border-radius: 4px; cursor: pointer; font-size: 11px; transition: color 0.2s; font-weight: bold; }
@@ -165,7 +165,7 @@
         .stock-u-row { display: flex; justify-content: space-between; padding: 10px; background: rgba(0,0,0,0.3); border-radius: 6px; border-left: 3px solid transparent; }
 
         .settings-list { max-width: 600px; margin: 0 auto; display: flex; flex-direction: column; gap: 15px; padding-top: 40px; width: 100%; }
-        .setting-item { display: flex; justify-content: space-between; align-items: center; padding: 20px; transition: opacity 0.3s; }
+        .setting-item { display: flex; justify-content: space-between; align-items: center; padding: 20px; transition: opacity 0.3s, filter 0.3s; }
         .switch { position: relative; display: inline-block; width: 44px; height: 24px; }
         .switch input { opacity: 0; width: 0; height: 0; }
         .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: rgba(255,255,255,0.1); transition: .4s; border-radius: 24px; }
@@ -173,25 +173,20 @@
         input:checked + .slider { background-color: var(--color-dyn1); box-shadow: 0 0 10px var(--color-dyn1); }
         input:checked + .slider:before { transform: translateX(20px); background-color: #000; }
 
-        /* 🌟 帶間隔的設定分隔線 */
-        .settings-divider { height: 1px; background: rgba(255,255,255,0.06); margin: 5px 15px 15px 15px; }
-
-        /* 🌟 極致果凍物理滑桿 (Jelly Slider) */
+        /* 🌟 高質感全玻璃果凍滑桿 */
         .jelly-slider { 
-            -webkit-appearance: none; width: 100%; height: 8px; border-radius: 4px; 
-            background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.1); 
-            backdrop-filter: blur(5px); outline: none; transition: .2s; 
-            --thumb-stretch: 1; --thumb-origin: center; --thumb-trans: transform 0.6s cubic-bezier(0.4, 2.5, 0.4, 1);
+            --j-scale: 1; --j-origin: center;
+            -webkit-appearance: none; width: 100%; height: 8px; border-radius: 4px; outline: none; 
+            background: rgba(255, 255, 255, 0.08); backdrop-filter: blur(5px); border: 1px solid rgba(255,255,255,0.05); 
         }
         .jelly-slider::-webkit-slider-thumb { 
             -webkit-appearance: none; appearance: none; width: 22px; height: 22px; border-radius: 50%; 
-            background: rgba(220, 220, 220, 0.95); backdrop-filter: blur(5px); border: 1px solid rgba(255,255,255,0.5);
-            cursor: pointer; box-shadow: 0 2px 10px rgba(0,0,0,0.6); 
-            transform: scaleX(var(--thumb-stretch)); transform-origin: var(--thumb-origin); 
-            transition: var(--thumb-trans); 
+            background: rgba(255, 255, 255, 0.25); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.4); box-shadow: 0 4px 15px rgba(0,0,0,0.4); cursor: pointer; 
+            transform: scaleX(var(--j-scale)) translateX(0); transform-origin: var(--j-origin);
         }
-        .jelly-input { width: 48px; background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.1); color: #fff; padding: 4px; border-radius: 6px; text-align: center; font-family: monospace; font-size: 13px; transition: border-color 0.3s; }
-        .jelly-input:focus { outline: none; border-color: var(--color-dyn2); }
+        .jelly-input { width: 45px; background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.1); color: #fff; padding: 4px; border-radius: 6px; text-align: center; font-family: monospace; font-size: 13px; transition: border-color 0.3s; }
+        .jelly-input:focus { outline: none; border-color: rgba(255,255,255,0.4); }
 
         /* 高質感霧化背景 + 頂端跟手下拉彈窗 */
         .modal-overlay {
@@ -232,7 +227,7 @@
             }
             .mobile-menu-btn {
                 background: transparent; border: none; color: #fff; font-size: 20px; cursor: pointer; padding: 10px; margin-left: -10px;
-                z-index: 2; 
+                z-index: 2;
             }
             .mobile-header-title {
                 position: absolute; left: 50%; transform: translateX(-50%);
@@ -413,19 +408,18 @@
                 </div>
                 <label class="switch"><input type="checkbox" id="setting-nodes-show" checked><span class="slider"></span></label>
             </div>
-            
-            <div class="glass-panel setting-item" id="node-limit-container">
+            <div class="glass-panel setting-item" id="max-nodes-setting">
                 <div>
                     <div style="font-weight: bold; color: #fff;">節點顯示上限</div>
                     <div style="font-size: 12px; color: #777; margin-top: 4px;">過濾平緩區間，僅保留關鍵轉折。</div>
                 </div>
-                <div style="display: flex; align-items: center; gap: 10px; width: 50%; justify-content: flex-end;">
+                <div style="display: flex; align-items: center; gap: 12px; width: 45%; justify-content: flex-end;">
                     <input type="range" id="setting-nodes-max" min="2" max="201" step="1" class="jelly-slider">
                     <input type="text" id="setting-nodes-input" class="jelly-input">
                 </div>
             </div>
             
-            <div class="settings-divider"></div>
+            <div style="margin-top: 25px;"></div>
             
             <div class="glass-panel setting-item">
                 <div>
@@ -462,15 +456,11 @@
 
 <script>
     /* =========================================
-       0. 節點設定初始化 (優先執行)
+       0. 節點設定初始化 (優先執行以備圖表繪製)
        ========================================= */
     const isMobileDevice = window.innerWidth <= 768;
     let showChartNodes = localStorage.getItem('SETTING_SHOW_NODES') !== 'false';
     let maxChartNodes = localStorage.getItem('SETTING_MAX_NODES') || (isMobileDevice ? 30 : 60);
-    
-    // 🌟 全局預覽狀態鎖
-    let isChartInteractionActive = false;
-    let canvasTouchStart = 0;
 
     /* =========================================
        1. 數據橋接核心與真實時間戳記轉化
@@ -513,7 +503,7 @@
     document.getElementById('val-sta1').innerText = "$ " + s1[s1.length - 1].toLocaleString(undefined, {maximumFractionDigits: 0});
     document.getElementById('val-sta2').innerText = "$ " + s2[s2.length - 1].toLocaleString(undefined, {maximumFractionDigits: 0});
 
-    // 🌟 AI 智慧節點權重過濾器：優先剔除平緩區間，保留起落轉折
+    // 🌟 AI 智慧節點權重過濾器：只篩選出轉折點與頭尾
     function calculatePointRadii(datasetData) {
         if (!showChartNodes) return datasetData.map(() => 0);
         if (maxChartNodes === 'All') return datasetData.map(() => 3);
@@ -529,22 +519,20 @@
 
         for (let i = 0; i < len; i++) {
             if (i === 0 || i === len - 1) {
-                importance.push({ i, val: Infinity }); // 強制保留頭尾
+                importance.push({ i, val: Infinity }); // 強制保留起點與終點
             } else {
                 let diffPrev = Math.abs(datasetData[i] - datasetData[i-1]);
                 let diffNext = Math.abs(datasetData[i] - datasetData[i+1]);
                 if (diffPrev === 0 && diffNext === 0) {
-                    importance.push({ i, val: -1 }); // 直接淘汰無波動死水區
+                    importance.push({ i, val: -1 }); // 剔除完全平緩區間
                 } else {
-                    importance.push({ i, val: diffPrev + diffNext }); // 依轉折劇烈度排定優先權
+                    importance.push({ i, val: diffPrev + diffNext }); // 依波動大小賦予權重
                 }
             }
         }
 
         importance.sort((a, b) => b.val - a.val);
-        for (let k = 0; k < n; k++) {
-            radii[importance[k].i] = 3;
-        }
+        for (let k = 0; k < n; k++) { radii[importance[k].i] = 3; }
         return radii;
     }
 
@@ -592,23 +580,12 @@
         
         mainChart.data.labels = chartLabels.slice(startIndex);
         
-        const data1 = d1.slice(startIndex);
-        mainChart.data.datasets[0].data = data1;
-        mainChart.data.datasets[0].pointRadius = calculatePointRadii(data1);
+        const data1 = d1.slice(startIndex); mainChart.data.datasets[0].data = data1; mainChart.data.datasets[0].pointRadius = calculatePointRadii(data1);
+        const data2 = d2.slice(startIndex); mainChart.data.datasets[1].data = data2; mainChart.data.datasets[1].pointRadius = calculatePointRadii(data2);
+        const data3 = s1.slice(startIndex); mainChart.data.datasets[2].data = data3; mainChart.data.datasets[2].pointRadius = calculatePointRadii(data3);
+        const data4 = s2.slice(startIndex); mainChart.data.datasets[3].data = data4; mainChart.data.datasets[3].pointRadius = calculatePointRadii(data4);
 
-        const data2 = d2.slice(startIndex);
-        mainChart.data.datasets[1].data = data2;
-        mainChart.data.datasets[1].pointRadius = calculatePointRadii(data2);
-
-        const data3 = s1.slice(startIndex);
-        mainChart.data.datasets[2].data = data3;
-        mainChart.data.datasets[2].pointRadius = calculatePointRadii(data3);
-
-        const data4 = s2.slice(startIndex);
-        mainChart.data.datasets[3].data = data4;
-        mainChart.data.datasets[3].pointRadius = calculatePointRadii(data4);
-
-        mainChart.update('none'); // 無痕更新避免閃爍
+        mainChart.update();
     }
 
     /* =========================================
@@ -628,9 +605,7 @@
         document.querySelectorAll('.view-section').forEach(el => el.classList.remove('active'));
         document.getElementById(viewId).classList.add('active');
         
-        if (isMobileDevice && sidebarEl.classList.contains('open')) {
-            toggleSidebar();
-        }
+        if (isMobileDevice && sidebarEl.classList.contains('open')) toggleSidebar();
         if (viewId === 'view-records') renderLedgerTable();
         if (viewId === 'view-stocks') loadStockStatus();
     }
@@ -639,18 +614,14 @@
        3. 矩陣狀態機邏輯 & 長按事件
        ========================================= */
     let selectedUniverses = ['DYN_1', 'DYN_2', 'STA_1', 'STA_2'];
-    let cardLongPressed = false;
-    let cardTimer = null;
+    let cardLongPressed = false; let cardTimer = null;
 
     const uKeys = ['DYN_1', 'DYN_2', 'STA_1', 'STA_2'];
     uKeys.forEach(u => {
         const el = document.getElementById(`card-${u}`);
         const startPress = (e) => {
             cardLongPressed = false;
-            cardTimer = setTimeout(() => {
-                cardLongPressed = true;
-                showUniverseOverallDetail(u); 
-            }, 500);
+            cardTimer = setTimeout(() => { cardLongPressed = true; showUniverseOverallDetail(u); }, 500);
         };
         const cancelPress = () => { if(cardTimer) clearTimeout(cardTimer); };
         
@@ -666,37 +637,27 @@
         if (cardLongPressed) return; 
 
         if (isMobileDevice || event.ctrlKey || event.metaKey) {
-            if (selectedUniverses.length === 4) {
-                selectedUniverses = [universe];
-            } else if (selectedUniverses.includes(universe)) {
+            if (selectedUniverses.length === 4) selectedUniverses = [universe];
+            else if (selectedUniverses.includes(universe)) {
                 selectedUniverses = selectedUniverses.filter(u => u !== universe);
                 if (selectedUniverses.length === 0) selectedUniverses = Object.keys(U_COLORS);
-            } else {
-                selectedUniverses.push(universe);
-            }
+            } else selectedUniverses.push(universe);
         } else {
-            if (selectedUniverses.length === 1 && selectedUniverses[0] === universe) {
-                selectedUniverses = Object.keys(U_COLORS);
-            } else {
-                selectedUniverses = [universe];
-            }
+            if (selectedUniverses.length === 1 && selectedUniverses[0] === universe) selectedUniverses = Object.keys(U_COLORS);
+            else selectedUniverses = [universe];
         }
-        updateUIState();
-        renderLedgerTable(); 
+        updateUIState(); renderLedgerTable(); 
     }
 
     function updateUIState() {
         const allU = Object.keys(U_COLORS);
         allU.forEach(u => {
             const card = document.getElementById(`card-${u}`);
-            if (selectedUniverses.includes(u)) {
-                card.classList.add('active-focus'); card.classList.remove('dimmed');
-            } else {
-                card.classList.remove('active-focus'); card.classList.add('dimmed');
-            }
+            if (selectedUniverses.includes(u)) { card.classList.add('active-focus'); card.classList.remove('dimmed'); } 
+            else { card.classList.remove('active-focus'); card.classList.add('dimmed'); }
         });
         allU.forEach((u, idx) => mainChart.setDatasetVisibility(idx, selectedUniverses.includes(u)));
-        mainChart.update('none');
+        mainChart.update();
 
         const commander = document.getElementById('ai-commander');
         const input = document.getElementById('chat-input');
@@ -719,8 +680,21 @@
     }
 
     /* =========================================
-       4. Chart.js 🌟 全終端長按預覽與短按詳情
+       4. Chart.js 核心邏輯與互動過濾器
        ========================================= */
+    let isPointerDown = false;
+    let pointerDownTime = 0;
+
+    // 🌟 外掛攔截器：電腦版若滑鼠沒按住，直接阻擋圖表 Hover 事件 (不會出現預覽框)
+    const holdInteractionPlugin = {
+        id: 'holdInteraction',
+        beforeEvent: (chart, args) => {
+            if (!isMobileDevice && args.event.type === 'mousemove' && !isPointerDown) {
+                return false; 
+            }
+        }
+    };
+
     const chartData = {
         labels: chartLabels,
         datasets: [
@@ -733,48 +707,29 @@
 
     const canvasEl = document.getElementById('mainChart');
     
-    // 監聽互動狀態，作為 Tooltip 的總開關
-    function startInteraction() {
-        canvasTouchStart = Date.now();
-        isChartInteractionActive = true;
-        mainChart.update('none');
-    }
-    function endInteraction() {
-        if(isChartInteractionActive) {
-            setTimeout(() => {
-                isChartInteractionActive = false;
-                mainChart.update('none');
-            }, 50); // 微延遲確保 click 事件能成功擊發
-        }
-    }
-
-    canvasEl.addEventListener('mousedown', startInteraction);
-    canvasEl.addEventListener('touchstart', startInteraction, {passive: true});
-    window.addEventListener('mouseup', endInteraction);
-    window.addEventListener('touchend', endInteraction);
-    window.addEventListener('touchcancel', endInteraction);
+    // 綁定全域點擊事件，為詳情判斷提供時間戳
+    canvasEl.addEventListener('mousedown', () => { isPointerDown = true; pointerDownTime = Date.now(); });
+    canvasEl.addEventListener('touchstart', () => { isPointerDown = true; pointerDownTime = Date.now(); }, {passive: true});
+    window.addEventListener('mouseup', () => { 
+        isPointerDown = false; 
+        if (!isMobileDevice) { mainChart.setActiveElements([]); mainChart.tooltip.setActiveElements([], {x:0,y:0}); mainChart.update(); } 
+    });
 
     const mainChart = new Chart(canvasEl.getContext('2d'), {
         type: 'line', data: chartData,
+        plugins: [holdInteractionPlugin],
         options: {
             responsive: true, maintainAspectRatio: false,
             interaction: { mode: 'index', intersect: false },
-            plugins: { 
-                legend: { display: false }, 
-                tooltip: { 
-                    backgroundColor: 'rgba(0,0,0,0.8)', titleColor: '#fff', padding: 12,
-                    // 🌟 核心過濾器：只有按住滑鼠或螢幕時才放行 Tooltip 渲染
-                    filter: function() { return isChartInteractionActive; }
-                } 
-            },
+            plugins: { legend: { display: false }, tooltip: { backgroundColor: 'rgba(0,0,0,0.8)', titleColor: '#fff', padding: 12 } },
             scales: {
                 y: { grid: { color: 'rgba(255,255,255,0.03)' }, ticks: { color: '#666' } },
                 x: { grid: { display: false }, ticks: { color: '#666', maxRotation: 0, autoSkip: true, font: { size: 10 } } }
             },
             onClick: (e, elements) => {
-                // 🌟 短按判定：超過 300 毫秒視為長按預覽，不彈出詳情
-                if (Date.now() - canvasTouchStart > 300) return; 
-                
+                // 🌟 嚴格判定：超過 300 毫秒即視為「長按拖曳」，絕對不觸發詳細資訊彈窗
+                if (Date.now() - pointerDownTime > 300) return; 
+
                 const activePoints = mainChart.getElementsAtEventForMode(e, 'nearest', { intersect: true }, false);
                 if (activePoints.length > 0) {
                     const dsIndex = activePoints[0].datasetIndex;
@@ -786,45 +741,37 @@
         }
     });
 
+    canvasEl.addEventListener('touchend', () => {
+        isPointerDown = false;
+        if (isMobileDevice) setTimeout(() => { mainChart.tooltip.setActiveElements([], {x:0, y:0}); mainChart.update(); }, 50);
+    });
+
     /* =========================================
        5. 🌟 彈性浮動時間軸選擇器 (Jelly Pill)
        ========================================= */
     const tfGroup = document.getElementById('tf-group');
     const tfBg = document.getElementById('tf-active-bg');
     const tfBtns = Array.from(document.querySelectorAll('.tf-btn'));
-    let tfIsDragging = false;
-    let tfStartX = 0;
-    let tfCurrentX = 0;
-    let activeTfIndex = 0; 
-    let initialBgLeft = 0;
+    let tfIsDragging = false; let tfStartX = 0; let tfCurrentX = 0; let activeTfIndex = 0; let initialBgLeft = 0;
 
     function updateTfBg(index, animate = true) {
         if(index < 0 || index >= tfBtns.length) return;
         const btn = tfBtns[index];
-        if (!animate) {
-            tfBg.style.transition = 'none';
-        } else {
-            tfBg.style.transition = 'transform 0.4s cubic-bezier(0.25, 1.5, 0.5, 1), width 0.3s cubic-bezier(0.4, 0, 0.2, 1)';
-        }
+        tfBg.style.transition = animate ? 'transform 0.4s cubic-bezier(0.25, 1.5, 0.5, 1), width 0.3s cubic-bezier(0.4, 0, 0.2, 1)' : 'none';
         tfBg.style.width = btn.offsetWidth + 'px';
-        tfBg.style.transform = `translateX(${btn.offsetLeft}px)`; // 🌟 精準貼齊，消除誤差
+        tfBg.style.transform = `translateX(${btn.offsetLeft}px)`; 
     }
 
     tfBtns.forEach((btn, index) => {
         btn.addEventListener('click', () => {
-            tfBtns.forEach(b => b.classList.remove('active'));
-            btn.classList.add('active');
-            activeTfIndex = index;
-            updateTfBg(index);
-            updateChartTimeframe(btn.dataset.tf);
+            tfBtns.forEach(b => b.classList.remove('active')); btn.classList.add('active');
+            activeTfIndex = index; updateTfBg(index); updateChartTimeframe(btn.dataset.tf);
         });
     });
 
-    // 手機版滑動果凍磁吸邏輯
     tfGroup.addEventListener('touchstart', (e) => {
         if(!isMobileDevice) return;
-        tfIsDragging = true;
-        tfStartX = e.touches[0].clientX;
+        tfIsDragging = true; tfStartX = e.touches[0].clientX;
         initialBgLeft = tfBtns[activeTfIndex].offsetLeft;
         tfBg.style.transition = 'none';
     }, {passive: true});
@@ -833,12 +780,10 @@
         if(!tfIsDragging) return;
         tfCurrentX = e.touches[0].clientX;
         let diff = tfCurrentX - tfStartX;
-        
         if (Math.abs(diff) > 5 && e.cancelable) e.preventDefault(); 
         
         let stretch = 1 + Math.abs(diff) * 0.002;
         let moveX = initialBgLeft + diff * 0.8; 
-        
         tfBg.style.transform = `translateX(${moveX}px) scaleX(${Math.min(stretch, 1.3)})`;
         tfBg.style.transformOrigin = diff > 0 ? "left center" : "right center";
     }, {passive: false});
@@ -849,28 +794,18 @@
         
         let diff = tfCurrentX === 0 ? 0 : tfCurrentX - tfStartX;
         let centerPos = initialBgLeft + diff * 0.8 + (tfBtns[activeTfIndex].offsetWidth / 2);
-        
-        let minDiff = Infinity;
-        let closestIndex = activeTfIndex;
+        let minDiff = Infinity; let closestIndex = activeTfIndex;
         
         tfBtns.forEach((btn, index) => {
             let btnCenter = btn.offsetLeft + (btn.offsetWidth / 2);
             let d = Math.abs(centerPos - btnCenter);
-            if(d < minDiff) {
-                minDiff = d;
-                closestIndex = index;
-            }
+            if(d < minDiff) { minDiff = d; closestIndex = index; }
         });
         
-        tfBtns.forEach(b => b.classList.remove('active'));
-        tfBtns[closestIndex].classList.add('active');
-        activeTfIndex = closestIndex;
-        
-        updateTfBg(closestIndex, true);
-        updateChartTimeframe(tfBtns[closestIndex].dataset.tf);
+        tfBtns.forEach(b => b.classList.remove('active')); tfBtns[closestIndex].classList.add('active');
+        activeTfIndex = closestIndex; updateTfBg(closestIndex, true); updateChartTimeframe(tfBtns[closestIndex].dataset.tf);
         tfCurrentX = 0;
     });
-
     setTimeout(() => { updateTfBg(0, false); }, 100);
 
     /* =========================================
@@ -891,11 +826,8 @@
                 <tr><td style="padding:8px 0; color:#888;">狀態:</td><td style="text-align:right; color:#00ffaa;">歷史快照</td></tr>
             </table>`;
             
-        const overlay = document.getElementById('detailModal');
-        const box = document.getElementById('detailModalBox');
-        overlay.style.display = 'flex';
-        void box.offsetWidth;
-        box.style.transform = 'translateY(0)';
+        const overlay = document.getElementById('detailModal'); const box = document.getElementById('detailModalBox');
+        overlay.style.display = 'flex'; void box.offsetWidth; box.style.transform = 'translateY(0)';
     }
 
     function showUniverseOverallDetail(uKey) {
@@ -908,10 +840,8 @@
         let arr = [100000];
         if (typeof NAV_HISTORY !== 'undefined' && NAV_HISTORY[uKey]) arr = NAV_HISTORY[uKey];
         
-        const latest = arr[arr.length - 1];
-        const initial = arr[0];
-        const highest = Math.max(...arr);
-        const lowest = Math.min(...arr);
+        const latest = arr[arr.length - 1]; const initial = arr[0];
+        const highest = Math.max(...arr); const lowest = Math.min(...arr);
         const totalReturn = ((latest - initial) / initial * 100).toFixed(2);
         const returnColor = totalReturn >= 0 ? '#00ffaa' : '#ff4560';
 
@@ -925,16 +855,12 @@
                 <tr><td style="padding:8px 0; color:#888;">策略防禦狀態:</td><td style="text-align:right; color:#fff;">ATR 智能移動追蹤停損運作中</td></tr>
             </table>`;
             
-        const overlay = document.getElementById('detailModal');
-        const box = document.getElementById('detailModalBox');
-        overlay.style.display = 'flex';
-        void box.offsetWidth;
-        box.style.transform = 'translateY(0)';
+        const overlay = document.getElementById('detailModal'); const box = document.getElementById('detailModalBox');
+        overlay.style.display = 'flex'; void box.offsetWidth; box.style.transform = 'translateY(0)';
     }
 
     function closeModal(id) { 
-        const overlay = document.getElementById(id);
-        const box = document.getElementById('detailModalBox');
+        const overlay = document.getElementById(id); const box = document.getElementById('detailModalBox');
         if(box) box.style.transform = 'translateY(-100%)';
         setTimeout(() => { overlay.style.display = 'none'; }, 350); 
     }
@@ -945,28 +871,18 @@
        7. 終端機互動與問答邏輯
        ========================================= */
     async function askAI() {
-        const input = document.getElementById('chat-input');
-        const output = document.getElementById('chat-output');
-        const userMsg = input.value.trim();
-        if (!userMsg) return;
+        const input = document.getElementById('chat-input'); const output = document.getElementById('chat-output');
+        const userMsg = input.value.trim(); if (!userMsg) return;
 
         let HARDCODED_API_KEY = localStorage.getItem('MY_GEMINI_KEY');
         if (!HARDCODED_API_KEY) {
-            HARDCODED_API_KEY = prompt("請輸入你的 Gemini API 金鑰 (只需輸入一次，會儲存在本機瀏覽器)：");
-            if (HARDCODED_API_KEY) {
-                localStorage.setItem('MY_GEMINI_KEY', HARDCODED_API_KEY);
-            } else {
-                alert("必須輸入金鑰才能啟動指揮中心 AI！");
-                return;
-            }
+            HARDCODED_API_KEY = prompt("請輸入你的 Gemini API 金鑰：");
+            if (HARDCODED_API_KEY) localStorage.setItem('MY_GEMINI_KEY', HARDCODED_API_KEY); else return;
         }
 
-        output.innerHTML += `<br><span style="color: #fff;">> ${userMsg}</span>`;
-        input.value = ""; 
-        output.scrollTop = output.scrollHeight;
-
+        output.innerHTML += `<br><span style="color: #fff;">> ${userMsg}</span>`; input.value = ""; output.scrollTop = output.scrollHeight;
         const msgId = "msg-" + Date.now();
-        output.innerHTML += `<br><div id="${msgId}"><span style="color: #00ffaa;">[GEMINI]</span> <span class="ai-text" style="color: #888;">連線 3.5-FLASH 核心中... <i class="fa-solid fa-circle-notch fa-spin"></i></span></div>`;
+        output.innerHTML += `<br><div id="${msgId}"><span style="color: #00ffaa;">[GEMINI]</span> <span class="ai-text" style="color: #888;">連線中 <i class="fa-solid fa-circle-notch fa-spin"></i></span></div>`;
         output.scrollTop = output.scrollHeight;
 
         const currentU = selectedUniverses.length > 0 ? selectedUniverses.join(', ') : '待機模式';
@@ -975,145 +891,94 @@
         const currentS1 = typeof s1 !== 'undefined' ? s1[s1.length - 1] : 0;
         const currentS2 = typeof s2 !== 'undefined' ? s2[s2.length - 1] : 0;
 
-        const sysPrompt = `你現在是 4D Matrix 量化交易系統的「AI 終端機語音助理」。
-當前聚焦的宇宙：${currentU}。
-目前各宇宙淨值如下：
-- DYN_1(積極)：${currentD1} 元
-- DYN_2(穩健)：${currentD2} 元
-- STA_1(靜態積極)：${currentS1} 元
-- STA_2(靜態穩健)：${currentS2} 元
-請用極其簡短、專業、略帶科幻駭客感的「繁體中文」回答使用者的問題。如果使用者問的問題跟股票無關，你也必須維持系統 AI 的角色設定。
-使用者指令：${userMsg}`;
+        const sysPrompt = `你現在是 4D Matrix 量化交易系統的「AI 終端機語音助理」。當前聚焦宇宙：${currentU}。各宇宙淨值：DYN_1(${currentD1}), DYN_2(${currentD2}), STA_1(${currentS1}), STA_2(${currentS2})。請用極其簡短、專業、駭客感的繁體中文回答。指令：${userMsg}`;
 
         try {
             const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent?key=${HARDCODED_API_KEY}`, {
-                method: 'POST', headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ contents: [{ parts: [{ text: sysPrompt }] }] })
+                method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ contents: [{ parts: [{ text: sysPrompt }] }] })
             });
             const data = await response.json();
-            if (data.error) {
-                document.getElementById(msgId).innerHTML = `<span style="color: #00ffaa;">[GEMINI]</span> <span style="color: #ff4560;">拒絕存取：${data.error.message}</span>`;
-                return;
-            }
+            if (data.error) { document.getElementById(msgId).innerHTML = `<span style="color: #00ffaa;">[GEMINI]</span> <span style="color: #ff4560;">存取拒絕：${data.error.message}</span>`; return; }
             const aiText = data.candidates[0].content.parts[0].text;
             const textContainer = document.getElementById(msgId).querySelector('.ai-text');
             textContainer.style.color = "#fff"; textContainer.innerHTML = ""; 
 
             let i = 0;
             function typeWriter() {
-                if (i < aiText.length) {
-                    textContainer.innerHTML += aiText.charAt(i) === '\n' ? '<br>' : aiText.charAt(i);
-                    i++; output.scrollTop = output.scrollHeight;
-                    setTimeout(typeWriter, 15);
-                }
+                if (i < aiText.length) { textContainer.innerHTML += aiText.charAt(i) === '\n' ? '<br>' : aiText.charAt(i); i++; output.scrollTop = output.scrollHeight; setTimeout(typeWriter, 15); }
             }
             typeWriter();
-        } catch (error) {
-            document.getElementById(msgId).innerHTML = `<span style="color: #00ffaa;">[GEMINI]</span> <span style="color: #ff4560;">網路異常：無法連線 (${error.message})</span>`;
-        }
+        } catch (error) { document.getElementById(msgId).innerHTML = `<span style="color: #00ffaa;">[GEMINI]</span> <span style="color: #ff4560;">連線異常 (${error.message})</span>`; }
     }
 
     /* =========================================
-       8. 🌟 防中斷側邊欄與廣角防呆解鎖
+       8. 🌟 防中斷側邊欄與廣角防呆解鎖 (66%觸發)
        ========================================= */
-    const sidebarEl = document.getElementById('sidebar');
-    const overlayEl = document.getElementById('sidebar-overlay');
-    let touchStartX = 0; let touchStartY = 0; 
-    let touchCurrentX = 0; let isDraggingMenu = false; let isDetermined = false;
-    
-    const SIDEBAR_WIDTH = 260; 
-    const SWIPE_THRESHOLD = SIDEBAR_WIDTH * 0.25; 
+    const sidebarEl = document.getElementById('sidebar'); const overlayEl = document.getElementById('sidebar-overlay');
+    let touchStartX = 0; let touchStartY = 0; let touchCurrentX = 0; let isDraggingMenu = false; let isDetermined = false;
+    const SIDEBAR_WIDTH = 260; const SWIPE_THRESHOLD = SIDEBAR_WIDTH * 0.25; 
 
     function toggleSidebar() {
-        const isOpen = sidebarEl.classList.contains('open');
-        if (isOpen) {
-            sidebarEl.classList.remove('open'); overlayEl.classList.remove('active');
-        } else {
-            sidebarEl.classList.add('open'); overlayEl.classList.add('active');
-        }
+        if (sidebarEl.classList.contains('open')) { sidebarEl.classList.remove('open'); overlayEl.classList.remove('active'); } 
+        else { sidebarEl.classList.add('open'); overlayEl.classList.add('active'); }
         sidebarEl.style.transform = ''; 
     }
 
     document.addEventListener('touchstart', (e) => {
         if (!isMobileDevice) return; 
-        
-        const ignoreSwipeSelectors = ['canvas', '.tf-btn', '.modal-top-box', '.jelly-slider'];
-        if (e.target.closest(ignoreSwipeSelectors.join(', '))) {
-            isDraggingMenu = false;
-            return;
-        }
+        const ignoreSelectors = ['canvas', '.tf-btn', '.modal-top-box', '.jelly-slider'];
+        if (e.target.closest(ignoreSelectors.join(', '))) { isDraggingMenu = false; return; }
 
-        touchStartX = e.touches[0].clientX;
-        touchStartY = e.touches[0].clientY;
-        isDraggingMenu = true;
-        isDetermined = false;
+        touchStartX = e.touches[0].clientX; touchStartY = e.touches[0].clientY;
+        isDraggingMenu = true; isDetermined = false;
 
         const isOpen = sidebarEl.classList.contains('open');
-        // 🌟 將啟動區域擴大至左側 66% (三分之二)
-        if (!isOpen && touchStartX > window.innerWidth * 0.66) {
-            isDraggingMenu = false; 
-        }
+        if (!isOpen && touchStartX > window.innerWidth * 0.66) isDraggingMenu = false; // 擴大觸發範圍為左側 66%
     }, {passive: true});
 
     document.addEventListener('touchmove', (e) => {
         if (!isDraggingMenu || !isMobileDevice) return;
-        touchCurrentX = e.touches[0].clientX;
-        const touchCurrentY = e.touches[0].clientY;
-        const diffX = touchCurrentX - touchStartX;
-        const diffY = touchCurrentY - touchStartY;
+        touchCurrentX = e.touches[0].clientX; const touchCurrentY = e.touches[0].clientY;
+        const diffX = touchCurrentX - touchStartX; const diffY = touchCurrentY - touchStartY;
 
         if (!isDetermined) {
-            if (Math.abs(diffX) > Math.abs(diffY)) {
-                isDetermined = true; 
-            } else {
-                isDraggingMenu = false; 
-                return;
-            }
+            if (Math.abs(diffX) > Math.abs(diffY)) isDetermined = true; 
+            else { isDraggingMenu = false; return; }
         }
 
         const isOpen = sidebarEl.classList.contains('open');
         if (!isOpen && diffX > 0) {
             if (e.cancelable) e.preventDefault(); 
             sidebarEl.classList.add('dragging');
-            const moveX = Math.min(diffX - SIDEBAR_WIDTH, 0); 
-            sidebarEl.style.transform = `translateX(${moveX}px)`;
+            sidebarEl.style.transform = `translateX(${Math.min(diffX - SIDEBAR_WIDTH, 0)}px)`;
         } else if (isOpen && diffX < 0) {
             if (e.cancelable) e.preventDefault();
             sidebarEl.classList.add('dragging');
-            const moveX = Math.max(diffX, -SIDEBAR_WIDTH);
-            sidebarEl.style.transform = `translateX(${moveX}px)`;
+            sidebarEl.style.transform = `translateX(${Math.max(diffX, -SIDEBAR_WIDTH)}px)`;
         }
     }, {passive: false});
 
-    // 🌟 獨立出 snapSidebar 處理所有中斷與放開的情境
+    // 獨立處理器：確保 iOS 控制中心干擾時能自動吸附不卡住
     function snapSidebar(e) {
         if (!isDraggingMenu || !isMobileDevice) return;
-        isDraggingMenu = false;
-        sidebarEl.classList.remove('dragging');
+        isDraggingMenu = false; sidebarEl.classList.remove('dragging');
         
-        const diffX = touchCurrentX - touchStartX;
-        const absDiff = Math.abs(diffX);
+        const diffX = touchCurrentX - touchStartX; const absDiff = Math.abs(diffX);
         const isOpen = sidebarEl.classList.contains('open');
 
         if (touchCurrentX !== 0) {
             if (!isOpen && diffX > 0) {
-                if (diffX > SWIPE_THRESHOLD) {
-                    sidebarEl.classList.add('open'); overlayEl.classList.add('active');
-                }
+                if (diffX > SWIPE_THRESHOLD) { sidebarEl.classList.add('open'); overlayEl.classList.add('active'); }
             } else if (isOpen && diffX < 0) {
-                if (absDiff > SWIPE_THRESHOLD) {
-                    sidebarEl.classList.remove('open'); overlayEl.classList.remove('active');
-                }
+                if (absDiff > SWIPE_THRESHOLD) { sidebarEl.classList.remove('open'); overlayEl.classList.remove('active'); }
             }
         }
-        sidebarEl.style.transform = ''; 
-        touchStartX = 0; touchStartY = 0; touchCurrentX = 0;
+        sidebarEl.style.transform = ''; touchStartX = 0; touchStartY = 0; touchCurrentX = 0;
     }
 
     document.addEventListener('touchend', snapSidebar);
-    // 🌟 防呆：攔截 iOS 控制中心等中斷事件
-    document.addEventListener('touchcancel', snapSidebar); 
-    window.addEventListener('blur', snapSidebar);
+    document.addEventListener('touchcancel', snapSidebar); // 防呆攔截
+    window.addEventListener('blur', snapSidebar); // 防呆攔截
 
     /* =========================================
        9. 帳本過濾與本地時間翻譯
@@ -1122,35 +987,24 @@
 
     async function loadAllLedgers() {
         const universes = [
-            { name: 'DYN_1', path: 'data/ledger_dyn_1_agg.csv' },
-            { name: 'DYN_2', path: 'data/ledger_dyn_2_con.csv' },
-            { name: 'STA_1', path: 'data/ledger_sta_1_agg.csv' },
-            { name: 'STA_2', path: 'data/ledger_sta_2_con.csv' }
+            { name: 'DYN_1', path: 'data/ledger_dyn_1_agg.csv' }, { name: 'DYN_2', path: 'data/ledger_dyn_2_con.csv' },
+            { name: 'STA_1', path: 'data/ledger_sta_1_agg.csv' }, { name: 'STA_2', path: 'data/ledger_sta_2_con.csv' }
         ];
-        
         allLedgerRecords = [];
-        
         for (const u of universes) {
             try {
-                const response = await fetch(u.path);
-                if (!response.ok) continue;
-                const text = await response.text();
-                const records = parseCSVLedger(text, u.name);
-                allLedgerRecords = allLedgerRecords.concat(records);
+                const res = await fetch(u.path); if (!res.ok) continue;
+                allLedgerRecords = allLedgerRecords.concat(parseCSVLedger(await res.text(), u.name));
             } catch (e) { }
         }
-        
         allLedgerRecords.sort((a, b) => new Date(b.time.replace(' ', 'T') + 'Z') - new Date(a.time.replace(' ', 'T') + 'Z'));
         renderLedgerTable();
     }
 
     function parseCSVLedger(text, universeName) {
-        const lines = text.split('\n');
-        if (lines.length <= 1) return [];
-        
+        const lines = text.split('\n'); if (lines.length <= 1) return [];
         const headers = lines[0].split(',').map(h => h.trim().toLowerCase());
         const records = [];
-        
         const timeIdx = headers.findIndex(h => h.includes('time') || h.includes('時間') || h.includes('date'));
         const tickerIdx = headers.findIndex(h => h.includes('ticker') || h.includes('標的') || h.includes('symbol'));
         const actionIdx = headers.findIndex(h => h.includes('action') || h.includes('動作') || h.includes('type') || h.includes('side'));
@@ -1158,62 +1012,26 @@
         const priceIdx = headers.findIndex(h => h.includes('price') || h.includes('價格'));
         
         for (let i = 1; i < lines.length; i++) {
-            const line = lines[i].trim();
-            if (!line) continue;
+            const line = lines[i].trim(); if (!line) continue;
             const cols = line.split(',');
-            
             const action = actionIdx !== -1 && cols[actionIdx] ? cols[actionIdx].replace(/"/g, '').trim().toUpperCase() : 'BUY';
             const ticker = tickerIdx !== -1 && cols[tickerIdx] ? cols[tickerIdx].replace(/"/g, '').trim() : '未知';
             if (action === 'DEPOSIT' || ticker === 'NONE') continue; 
-            
             let rawTime = timeIdx !== -1 && cols[timeIdx] ? cols[timeIdx].replace(/"/g, '').trim() : '未知';
             if (rawTime !== '未知') {
-                const utcStr = rawTime.replace(' ', 'T') + ':00Z'; 
-                const d = new Date(utcStr);
-                if (!isNaN(d)) {
-                    const yyyy = d.getFullYear();
-                    const mm = String(d.getMonth() + 1).padStart(2, '0');
-                    const dd = String(d.getDate()).padStart(2, '0');
-                    const hh = String(d.getHours()).padStart(2, '0');
-                    const min = String(d.getMinutes()).padStart(2, '0');
-                    rawTime = `${yyyy}-${mm}-${dd} ${hh}:${min}`;
-                }
+                const d = new Date(rawTime.replace(' ', 'T') + ':00Z'); 
+                if (!isNaN(d)) rawTime = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
             }
-            
-            records.push({
-                time: rawTime, ticker: ticker, action: action,
-                qty: qtyIdx !== -1 && cols[qtyIdx] ? parseInt(cols[qtyIdx].replace(/"/g, '')) : 0,
-                price: priceIdx !== -1 && cols[priceIdx] ? parseFloat(cols[priceIdx].replace(/"/g, '')) : 0.0,
-                universe: universeName
-            });
+            records.push({ time: rawTime, ticker: ticker, action: action, qty: qtyIdx !== -1 && cols[qtyIdx] ? parseInt(cols[qtyIdx].replace(/"/g, '')) : 0, price: priceIdx !== -1 && cols[priceIdx] ? parseFloat(cols[priceIdx].replace(/"/g, '')) : 0.0, universe: universeName });
         }
         return records;
     }
 
     function renderLedgerTable() {
-        const tbody = document.querySelector('#view-records table tbody');
-        if (!tbody) return;
-        
+        const tbody = document.querySelector('#view-records table tbody'); if (!tbody) return;
         const filtered = allLedgerRecords.filter(r => selectedUniverses.includes(r.universe));
-        if (filtered.length === 0) {
-            tbody.innerHTML = `<tr><td colspan=\"6\" style=\"text-align:center; color:#555; padding:40px; font-size:12px;\">聚焦宇宙當前尚無實質交易事件</td></tr>`;
-            return;
-        }
-        
-        tbody.innerHTML = filtered.map(r => {
-            const isBuy = r.action.includes('BUY');
-            const badgeClass = isBuy ? 'badge-buy' : 'badge-sell';
-            return `
-                <tr>
-                    <td>${r.time}</td>
-                    <td>${r.ticker}</td>
-                    <td><span class="${badgeClass}">${r.action}</span></td>
-                    <td>${r.qty.toLocaleString()}</td>
-                    <td>${r.price.toFixed(1)}</td>
-                    <td style="color: ${U_COLORS[r.universe]}; font-weight:bold;">${r.universe}</td>
-                </tr>
-            `;
-        }).join('');
+        if (filtered.length === 0) { tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; color:#555; padding:40px; font-size:12px;">聚焦宇宙當前尚無實質交易事件</td></tr>`; return; }
+        tbody.innerHTML = filtered.map(r => `<tr><td>${r.time}</td><td>${r.ticker}</td><td><span class="${r.action.includes('BUY') ? 'badge-buy' : 'badge-sell'}">${r.action}</span></td><td>${r.qty.toLocaleString()}</td><td>${r.price.toFixed(1)}</td><td style="color: ${U_COLORS[r.universe]}; font-weight:bold;">${r.universe}</td></tr>`).join('');
     }
 
     /* =========================================
@@ -1221,208 +1039,111 @@
        ========================================= */
     async function loadStockStatus() {
         try {
-            const res = await fetch('data/stock_status.json');
-            if (!res.ok) throw new Error('Data not found');
+            const res = await fetch('data/stock_status.json'); if (!res.ok) throw new Error('Not found');
             const data = await res.json();
-            
-            const container = document.getElementById('stock-grid-container');
-            container.innerHTML = '';
+            const container = document.getElementById('stock-grid-container'); container.innerHTML = '';
             
             for (const [ticker, info] of Object.entries(data)) {
-                let rsiClass = '';
-                if (info.rsi > 70) rsiClass = 'overbought';
-                if (info.rsi < 30) rsiClass = 'oversold';
-                
-                let html = `
-                <div class="glass-panel stock-card">
-                    <div class="stock-card-header">
-                        <div class="stock-ticker">${ticker}</div>
-                        <div style="display:flex; gap:10px; align-items:center;">
-                            <div class="stock-rsi ${rsiClass}">RSI: ${info.rsi.toFixed(1)}</div>
-                            <div class="stock-price">$${info.price.toFixed(1)}</div>
-                        </div>
-                    </div>
-                    <div class="stock-universe-list">
-                `;
-                
-                const uKeys = ['DYN_1', 'DYN_2', 'STA_1', 'STA_2'];
-                
-                uKeys.forEach(u => {
-                    const uData = info.universes[u];
-                    if (!uData) return;
-                    
-                    let statusText = '';
-                    if (uData.shares > 0) {
-                        statusText = `<span style="color:#00ffaa">持股 ${uData.shares} 股 (價值 $${uData.value.toLocaleString(undefined, {maximumFractionDigits:0})})</span><br>
-                                      <span style="color:#ff4560">移動停損: $${uData.stop_price.toFixed(1)}</span>`;
-                    } else {
-                        statusText = `<span style="color:#aaa">空手觀望</span><br>
-                                      <span style="color:#00d4ff">預期買進實力: ${uData.est_buy_shares} 股</span>`;
-                    }
-                    
-                    html += `
-                        <div class="stock-u-row" style="border-left-color: ${U_COLORS[u]};">
-                            <div style="color:${U_COLORS[u]}; font-weight:bold; width: 50px; display:flex; align-items:center;">${u}</div>
-                            <div style="text-align:right; flex:1; line-height:1.6;">
-                                ${statusText}
-                            </div>
-                        </div>
-                    `;
+                let rsiClass = info.rsi > 70 ? 'overbought' : (info.rsi < 30 ? 'oversold' : '');
+                let html = `<div class="glass-panel stock-card"><div class="stock-card-header"><div class="stock-ticker">${ticker}</div><div style="display:flex; gap:10px; align-items:center;"><div class="stock-rsi ${rsiClass}">RSI: ${info.rsi.toFixed(1)}</div><div class="stock-price">$${info.price.toFixed(1)}</div></div></div><div class="stock-universe-list">`;
+                ['DYN_1', 'DYN_2', 'STA_1', 'STA_2'].forEach(u => {
+                    const uData = info.universes[u]; if (!uData) return;
+                    let statusText = uData.shares > 0 ? `<span style="color:#00ffaa">持股 ${uData.shares} 股 (價值 $${uData.value.toLocaleString(undefined, {maximumFractionDigits:0})})</span><br><span style="color:#ff4560">移動停損: $${uData.stop_price.toFixed(1)}</span>` : `<span style="color:#aaa">空手觀望</span><br><span style="color:#00d4ff">預期買進實力: ${uData.est_buy_shares} 股</span>`;
+                    html += `<div class="stock-u-row" style="border-left-color: ${U_COLORS[u]};"><div style="color:${U_COLORS[u]}; font-weight:bold; width: 50px; display:flex; align-items:center;">${u}</div><div style="text-align:right; flex:1; line-height:1.6;">${statusText}</div></div>`;
                 });
-                
-                html += `</div></div>`;
-                container.innerHTML += html;
+                container.innerHTML += html + `</div></div>`;
             }
-        } catch (e) {
-            document.getElementById('stock-grid-container').innerHTML = `<div style="color:#888; padding: 20px; text-align:center; width:100%;">等待 Python 掃描器產出 stock_status.json...</div>`;
-        }
+        } catch (e) { document.getElementById('stock-grid-container').innerHTML = `<div style="color:#888; padding: 20px; text-align:center; width:100%;">等待 Python 掃描器產出 stock_status.json...</div>`; }
     }
 
     async function loadDynamicGenes() {
         try {
-            const response = await fetch('data/dynamic_config.json');
-            if (!response.ok) return;
-            const config = await response.json();
-            
-            if (config.DYN_1) {
-                const card1 = document.querySelector('.gene-grid .glass-panel:nth-child(1)');
-                if (card1) {
-                    card1.querySelector('.gene-circle').innerText = config.DYN_1.atr.toFixed(1) + 'x';
-                    card1.querySelector('div div:nth-child(1) strong').nextSibling.textContent = ` ${config.DYN_1.atr.toFixed(1)} 倍`;
-                    card1.querySelector('div div:nth-child(2) strong').nextSibling.textContent = ` ${(config.DYN_1.risk * 100).toFixed(1)}%`;
-                }
-            }
-            if (config.DYN_2) {
-                const card2 = document.querySelector('.gene-grid .glass-panel:nth-child(2)');
-                if (card2) {
-                    card2.querySelector('.gene-circle').innerText = config.DYN_2.atr.toFixed(1) + 'x';
-                    card2.querySelector('div div:nth-child(1) strong').nextSibling.textContent = ` ${config.DYN_2.atr.toFixed(1)} 倍`;
-                    card2.querySelector('div div:nth-child(2) strong').nextSibling.textContent = ` ${(config.DYN_2.risk * 100).toFixed(1)}%`;
-                }
-            }
+            const res = await fetch('data/dynamic_config.json'); if (!res.ok) return;
+            const config = await res.json();
+            if (config.DYN_1) { const c = document.querySelector('.gene-grid .glass-panel:nth-child(1)'); if (c) { c.querySelector('.gene-circle').innerText = config.DYN_1.atr.toFixed(1) + 'x'; c.querySelector('div div:nth-child(1) strong').nextSibling.textContent = ` ${config.DYN_1.atr.toFixed(1)} 倍`; c.querySelector('div div:nth-child(2) strong').nextSibling.textContent = ` ${(config.DYN_1.risk * 100).toFixed(1)}%`; } }
+            if (config.DYN_2) { const c = document.querySelector('.gene-grid .glass-panel:nth-child(2)'); if (c) { c.querySelector('.gene-circle').innerText = config.DYN_2.atr.toFixed(1) + 'x'; c.querySelector('div div:nth-child(1) strong').nextSibling.textContent = ` ${config.DYN_2.atr.toFixed(1)} 倍`; c.querySelector('div div:nth-child(2) strong').nextSibling.textContent = ` ${(config.DYN_2.risk * 100).toFixed(1)}%`; } }
         } catch (e) { }
     }
 
     /* =========================================
-       11. 🌟 系統設定連動與持久化邏輯
+       11. 🌟 系統設定與「真實果凍特效」連動邏輯
        ========================================= */
     function initSettingsPersistence() {
         const toggleShowNodes = document.getElementById('setting-nodes-show');
+        const maxNodesSetting = document.getElementById('max-nodes-setting');
         const sliderMaxNodes = document.getElementById('setting-nodes-max');
         const inputMaxNodes = document.getElementById('setting-nodes-input');
-        const jellySlider = document.getElementById('setting-nodes-max');
 
-        // 初始化 UI 狀態
         toggleShowNodes.checked = showChartNodes;
-        if (maxChartNodes === 'All') {
-            sliderMaxNodes.value = 201;
-            inputMaxNodes.value = 'All';
-        } else {
-            sliderMaxNodes.value = maxChartNodes;
-            inputMaxNodes.value = maxChartNodes;
-        }
+        if (maxChartNodes === 'All') { sliderMaxNodes.value = 201; inputMaxNodes.value = 'All'; } 
+        else { sliderMaxNodes.value = maxChartNodes; inputMaxNodes.value = maxChartNodes; }
 
-        // 🌟 節點設定鎖定機制
-        function updateNodeSettingsState() {
-            const container = document.getElementById('node-limit-container');
-            if (!showChartNodes) {
-                container.style.opacity = '0.3';
-                container.style.pointerEvents = 'none';
-                jellySlider.disabled = true;
-                inputMaxNodes.disabled = true;
-            } else {
-                container.style.opacity = '1';
-                container.style.pointerEvents = 'auto';
-                jellySlider.disabled = false;
-                inputMaxNodes.disabled = false;
-            }
+        function toggleNodeSettings(isOn) {
+            maxNodesSetting.style.opacity = isOn ? '1' : '0.3';
+            maxNodesSetting.style.pointerEvents = isOn ? 'auto' : 'none';
+            maxNodesSetting.style.filter = isOn ? 'none' : 'grayscale(1)';
         }
+        toggleNodeSettings(showChartNodes);
 
         function updateNodeLimitUI(val) {
-            if (val === 'All' || val >= 201) {
-                sliderMaxNodes.value = 201;
-                inputMaxNodes.value = 'All';
-                maxChartNodes = 'All';
-            } else {
-                sliderMaxNodes.value = val;
-                inputMaxNodes.value = val;
-                maxChartNodes = val;
-            }
-            localStorage.setItem('SETTING_MAX_NODES', maxChartNodes);
-            updateChartTimeframe(); 
+            if (val === 'All' || val >= 201) { sliderMaxNodes.value = 201; inputMaxNodes.value = 'All'; maxChartNodes = 'All'; } 
+            else { sliderMaxNodes.value = val; inputMaxNodes.value = val; maxChartNodes = val; }
+            localStorage.setItem('SETTING_MAX_NODES', maxChartNodes); updateChartTimeframe(); 
         }
+
+        // 🌟 滑桿果凍物理特效引擎
+        let sliderLastX = null; let sliderVel = 0; let sliderScale = 1; let sliderJellyActive = false;
+
+        const handleSliderMove = (x) => {
+            if(sliderLastX !== null) {
+                let dx = x - sliderLastX;
+                if(dx !== 0) {
+                    sliderMaxNodes.style.setProperty('--j-origin', dx > 0 ? 'left' : 'right');
+                    sliderVel += Math.abs(dx) * 0.05; // 根據移動速度拉長尾巴
+                    if (!sliderJellyActive) { sliderJellyActive = true; requestAnimationFrame(sliderSpringLoop); }
+                }
+            }
+            sliderLastX = x;
+        };
+
+        function sliderSpringLoop() {
+            sliderVel += (1 - sliderScale) * 0.5; // 彈簧恢復力
+            sliderVel *= 0.65; // 阻尼摩擦力
+            sliderScale += sliderVel;
+            sliderScale = Math.max(0.6, Math.min(sliderScale, 2.5)); // 限制形變範圍
+            sliderMaxNodes.style.setProperty('--j-scale', sliderScale);
+            
+            if (Math.abs(sliderScale - 1) > 0.001 || Math.abs(sliderVel) > 0.001) requestAnimationFrame(sliderSpringLoop);
+            else { sliderMaxNodes.style.setProperty('--j-scale', 1); sliderJellyActive = false; }
+        }
+
+        sliderMaxNodes.addEventListener('touchmove', e => handleSliderMove(e.touches[0].clientX), {passive: true});
+        sliderMaxNodes.addEventListener('mousemove', e => { if(e.buttons === 1) handleSliderMove(e.clientX); }, {passive: true});
+        const resetLastX = () => { sliderLastX = null; };
+        sliderMaxNodes.addEventListener('touchend', resetLastX); sliderMaxNodes.addEventListener('mouseup', resetLastX); sliderMaxNodes.addEventListener('mouseleave', resetLastX);
+        sliderMaxNodes.addEventListener('touchstart', e => sliderLastX = e.touches[0].clientX, {passive: true});
+        sliderMaxNodes.addEventListener('mousedown', e => sliderLastX = e.clientX, {passive: true});
 
         sliderMaxNodes.addEventListener('input', (e) => updateNodeLimitUI(e.target.value));
         inputMaxNodes.addEventListener('change', (e) => {
-            let val = e.target.value;
-            if (val.toLowerCase() === 'all') val = 'All';
-            else val = parseInt(val);
-            if (isNaN(val) || val < 2) val = 60;
-            updateNodeLimitUI(val);
+            let val = e.target.value.toLowerCase() === 'all' ? 'All' : parseInt(e.target.value);
+            if (isNaN(val) || val < 2) val = 60; updateNodeLimitUI(val);
         });
         
         toggleShowNodes.addEventListener('change', (e) => {
-            showChartNodes = e.target.checked;
-            localStorage.setItem('SETTING_SHOW_NODES', showChartNodes);
-            updateNodeSettingsState();
-            updateChartTimeframe();
+            showChartNodes = e.target.checked; localStorage.setItem('SETTING_SHOW_NODES', showChartNodes);
+            toggleNodeSettings(showChartNodes); updateChartTimeframe();
         });
 
-        updateNodeSettingsState();
-
-        // 原有設定綁定
         const switches = document.querySelectorAll('.setting-item input[type="checkbox"]:not(#setting-nodes-show)');
         switches.forEach((sw, idx) => {
-            const storageKey = `CORE_SETTING_VAL_${idx}`;
-            const savedState = localStorage.getItem(storageKey);
+            const storageKey = `CORE_SETTING_VAL_${idx}`; const savedState = localStorage.getItem(storageKey);
             if (savedState !== null) sw.checked = savedState === 'true';
             sw.addEventListener('change', () => localStorage.setItem(storageKey, sw.checked));
         });
-
-        // 🌟 果凍物理滑桿互動監聽器
-        let isSlidingJelly = false;
-        let lastJellyX = 0;
-
-        function startJelly(e) {
-            if(jellySlider.disabled) return;
-            isSlidingJelly = true;
-            lastJellyX = e.type.includes('mouse') ? e.clientX : e.touches[0].clientX;
-            jellySlider.style.setProperty('--thumb-trans', 'none');
-        }
-
-        function moveJelly(e) {
-            if(!isSlidingJelly) return;
-            let currentX = e.type.includes('mouse') ? e.clientX : e.touches[0].clientX;
-            let delta = currentX - lastJellyX;
-            let stretch = 1 + Math.min(Math.abs(delta) * 0.03, 1.8);
-            let origin = delta > 0 ? 'left' : (delta < 0 ? 'right' : 'center');
-            
-            jellySlider.style.setProperty('--thumb-stretch', stretch);
-            jellySlider.style.setProperty('--thumb-origin', origin);
-            lastJellyX = currentX;
-        }
-
-        function endJelly() {
-            if(!isSlidingJelly) return;
-            isSlidingJelly = false;
-            jellySlider.style.setProperty('--thumb-trans', 'transform 0.6s cubic-bezier(0.4, 2.5, 0.4, 1)');
-            jellySlider.style.setProperty('--thumb-stretch', 1);
-        }
-
-        jellySlider.addEventListener('mousedown', startJelly);
-        jellySlider.addEventListener('touchstart', startJelly, {passive: true});
-        window.addEventListener('mousemove', moveJelly);
-        window.addEventListener('touchmove', moveJelly, {passive: true});
-        window.addEventListener('mouseup', endJelly);
-        window.addEventListener('touchend', endJelly);
     }
 
-    initSettingsPersistence();
-    loadAllLedgers();
-    loadDynamicGenes();
-    loadStockStatus(); 
-    updateUIState();
-    updateChartTimeframe('1D');
+    initSettingsPersistence(); loadAllLedgers(); loadDynamicGenes(); loadStockStatus(); updateUIState(); updateChartTimeframe('1D');
 </script>
 </body>
 </html>
