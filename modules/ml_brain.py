@@ -1,4 +1,4 @@
-import pandas_ta as ta
+import pandas_ta_classic as ta
 
 def calculate_indicators(df):
     """幫歷史數據加上 5.0 終極版所需的所有技術指標"""
