@@ -1,6 +1,5 @@
-numpy==1.26.4
-pandas==2.2.2
-pandas-ta-classic
+numpy<2.0.0
+pandas
 yfinance
 beautifulsoup4
 google-genai
