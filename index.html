@@ -1241,23 +1241,44 @@
             if (!response.ok) return;
             const config = await response.json();
             
-            if (config.DYN_1) {
+            // 🚀 處理 DYN_1 積極核心
+            if (config.DYN_1_ATR !== undefined) {
                 const card1 = document.querySelector('.gene-grid .glass-panel:nth-child(1)');
                 if (card1) {
-                    card1.querySelector('.gene-circle').innerText = config.DYN_1.atr.toFixed(1) + 'x';
-                    card1.querySelector('div div:nth-child(1) strong').nextSibling.textContent = ` ${config.DYN_1.atr.toFixed(1)} 倍`;
-                    card1.querySelector('div div:nth-child(2) strong').nextSibling.textContent = ` ${(config.DYN_1.risk * 100).toFixed(1)}%`;
+                    card1.querySelector('.gene-circle').innerText = config.DYN_1_ATR.toFixed(1) + 'x';
+                    card1.querySelector('div div:nth-child(1) strong').nextSibling.textContent = ` ${config.DYN_1_ATR.toFixed(1)} 倍`;
+                    card1.querySelector('div div:nth-child(2) strong').nextSibling.textContent = ` ${(config.DYN_1_RISK * 100).toFixed(1)}%`;
+                    
+                    // 🌟 升級：把 AI 教練的評語直接顯示在面板上
+                    if (config.REASON_DYN_1) {
+                        const reasonEl = card1.querySelector('div div:nth-child(3)');
+                        reasonEl.textContent = `💡 AI 戰略: ${config.REASON_DYN_1}`;
+                        reasonEl.style.color = 'var(--color-dyn1)'; 
+                        reasonEl.style.fontWeight = 'bold';
+                    }
                 }
             }
-            if (config.DYN_2) {
+            
+            // 🛡️ 處理 DYN_2 穩健護盾
+            if (config.DYN_2_ATR !== undefined) {
                 const card2 = document.querySelector('.gene-grid .glass-panel:nth-child(2)');
                 if (card2) {
-                    card2.querySelector('.gene-circle').innerText = config.DYN_2.atr.toFixed(1) + 'x';
-                    card2.querySelector('div div:nth-child(1) strong').nextSibling.textContent = ` ${config.DYN_2.atr.toFixed(1)} 倍`;
-                    card2.querySelector('div div:nth-child(2) strong').nextSibling.textContent = ` ${(config.DYN_2.risk * 100).toFixed(1)}%`;
+                    card2.querySelector('.gene-circle').innerText = config.DYN_2_ATR.toFixed(1) + 'x';
+                    card2.querySelector('div div:nth-child(1) strong').nextSibling.textContent = ` ${config.DYN_2_ATR.toFixed(1)} 倍`;
+                    card2.querySelector('div div:nth-child(2) strong').nextSibling.textContent = ` ${(config.DYN_2_RISK * 100).toFixed(1)}%`;
+                    
+                    // 🌟 升級：把 AI 教練的評語直接顯示在面板上
+                    if (config.REASON_DYN_2) {
+                        const reasonEl = card2.querySelector('div div:nth-child(3)');
+                        reasonEl.textContent = `💡 AI 戰略: ${config.REASON_DYN_2}`;
+                        reasonEl.style.color = 'var(--color-dyn2)';
+                        reasonEl.style.fontWeight = 'bold';
+                    }
                 }
             }
-        } catch (e) { }
+        } catch (e) {
+            console.warn("無法載入動態基因參數:", e);
+        }
     }
 
     /* =========================================
