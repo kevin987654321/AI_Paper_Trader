@@ -6,32 +6,43 @@ import re
 from datetime import datetime
 import config
 
-def analyze_ledger(ledger_path):
-    """讀取指定的帳本路徑，計算基礎績效指標"""
+def analyze_ledger(universe_name, ledger_path):
+    """讀取指定的帳本與淨值歷史，計算包含持股的真實績效指標"""
     if not os.path.exists(ledger_path):
         return None
 
     try:
         df = pd.read_csv(ledger_path)
         sell_records = df[df['Action'] == 'SELL']
-
-        # 計算目前的投資報酬率 (ROI)
-        initial_cash = config.INITIAL_CAPITAL
-        current_cash = df.iloc[-1]['Cash_Left']
-        roi = ((current_cash - initial_cash) / initial_cash) * 100
         total_trades = len(sell_records)
         
-        # 🌟 移除「沒有 SELL 紀錄就中斷」的限制，改為生成資產現況報告讓 AI 進行評估
+        initial_cash = getattr(config, 'INITIAL_CAPITAL', 100000)
+        current_equity = initial_cash
+        current_cash = df.iloc[-1]['Cash_Left']
+        
+        # 🌟 核心修正：從 nav_history.csv 抓取包含「持股現值」的真實總資產
+        nav_path = "data/nav_history.csv"
+        if os.path.exists(nav_path):
+            nav_df = pd.read_csv(nav_path)
+            if universe_name in nav_df.columns and not nav_df.empty:
+                current_equity = float(nav_df.iloc[-1][universe_name])
+        else:
+            current_equity = current_cash
+            
+        # 計算真實的投資報酬率 (ROI)
+        roi = ((current_equity - initial_cash) / initial_cash) * 100
+        
         report = f"""
         - 初始資金: {initial_cash:,.0f} 元
-        - 目前現金: {current_cash:,.0f} 元
-        - 總報酬率 (ROI): {roi:.2f}%
+        - 目前帳戶現金: {current_cash:,.0f} 元
+        - 真實總資產 (含持股現值): {current_equity:,.0f} 元
+        - 真實總報酬率 (ROI): {roi:.2f}%
         """
         
         if total_trades > 0:
             report += f"        - 總共完成結清交易: {total_trades} 筆\n"
         else:
-            report += "        - 當前戰況提示: 目前暫無平倉賣出紀錄，所有資金皆在現金部位或持股波段未實現狀態。\n"
+            report += "        - 當前戰況提示: 目前暫無平倉紀錄，資金正處於現金部位或持股未實現狀態。\n"
             
         return report
         
@@ -60,10 +71,11 @@ def evolve_universe(universe_name, performance_data, current_atr, current_risk, 
     {performance_data}
 
     任務：
-    請根據「總報酬率」判斷是否需要微調參數。
+    請根據「真實總報酬率」判斷是否需要微調參數。
     - 參數合理範圍：ATR倍數介於 {atr_range}，風險介於 {risk_range}。
-    - 若嚴重虧損：縮小風險或降低 ATR 容忍度。
-    - 若穩定獲利：可微調放大參數以擴大獲利，或保持現狀。
+    - 若嚴重虧損(<-5%)：縮小風險或降低 ATR 容忍度。
+    - 若穩定獲利或持平：微調放大參數以擴大獲利，或「保持現狀」。
+    - 💡 關鍵指示：如果獲利或虧損幅度不到 1%，代表多數資金可能剛進場或空手，強烈建議給出「保持原樣」的決策！
     
     請以嚴格的 JSON 格式回覆。絕對不要包含任何 Markdown 標籤 (例如 ```json )，直接輸出 JSON 字串。
     必須包含以下格式：
@@ -82,7 +94,6 @@ def evolve_universe(universe_name, performance_data, current_atr, current_risk, 
             contents=prompt
         )
         
-        # 暴力清理 Markdown 標籤
         result_text = response.text.strip()
         result_text = re.sub(r'^```json', '', result_text, flags=re.IGNORECASE)
         result_text = re.sub(r'^```', '', result_text)
@@ -92,7 +103,6 @@ def evolve_universe(universe_name, performance_data, current_atr, current_risk, 
         
     except Exception as e:
         print(f"⚠️ {universe_name} 進化過程發生預期外錯誤: {e}")
-        # 若發生錯誤，回傳原始設定以保證系統能繼續運行
         return {
             f"{universe_name}_ATR": current_atr, 
             f"{universe_name}_RISK": current_risk,
@@ -105,18 +115,23 @@ def run_evolution():
     
     final_dynamic_config = {}
 
+    # 🌟 讀取最原始的健康參數，避免被上一次嚇壞的錯誤參數洗腦
+    base_dyn1_atr = getattr(config, 'DYN_1_ATR', 3.0)
+    base_dyn1_risk = getattr(config, 'DYN_1_RISK', 0.03)
+    base_dyn2_atr = getattr(config, 'DYN_2_ATR', 2.0)
+    base_dyn2_risk = getattr(config, 'DYN_2_RISK', 0.02)
+
     # ==========================================
     # 🚀 1. 處理 DYN_1 (動態積極組)
     # ==========================================
-    print("\n[讀取] DYN_1 動態積極組帳本...")
-    perf_dyn_1 = analyze_ledger(config.LEDGER_DYN_1)
+    print("\n[讀取] DYN_1 動態積極組真實績效...")
+    perf_dyn_1 = analyze_ledger("DYN_1", getattr(config, 'LEDGER_DYN_1', "data/ledger_dyn_1_agg.csv"))
     
-    # 積極組允許較大的 ATR 容忍度與風險
     params_dyn_1 = evolve_universe(
         universe_name="DYN_1",
         performance_data=perf_dyn_1,
-        current_atr=config.DYN_1_ATR,
-        current_risk=config.DYN_1_RISK,
+        current_atr=base_dyn1_atr,
+        current_risk=base_dyn1_risk,
         atr_range="2.5 ~ 4.0", 
         risk_range="0.02 ~ 0.05"
     )
@@ -125,33 +140,30 @@ def run_evolution():
     # ==========================================
     # 🛡️ 2. 處理 DYN_2 (動態穩健組)
     # ==========================================
-    print("\n[讀取] DYN_2 動態穩健組帳本...")
-    perf_dyn_2 = analyze_ledger(config.LEDGER_DYN_2)
+    print("\n[讀取] DYN_2 動態穩健組真實績效...")
+    perf_dyn_2 = analyze_ledger("DYN_2", getattr(config, 'LEDGER_DYN_2', "data/ledger_dyn_2_con.csv"))
     
-    # 穩健組嚴格限制防禦力，破線快跑
     params_dyn_2 = evolve_universe(
         universe_name="DYN_2",
         performance_data=perf_dyn_2,
-        current_atr=config.DYN_2_ATR,
-        current_risk=config.DYN_2_RISK,
+        current_atr=base_dyn2_atr,
+        current_risk=base_dyn2_risk,
         atr_range="1.5 ~ 2.5", 
         risk_range="0.01 ~ 0.02"
     )
     final_dynamic_config.update(params_dyn_2)
 
     # ==========================================
-    # 💾 3. 合併結果並寫入檔案（保留最新設定 + 追加歷史日誌）
+    # 💾 3. 合併結果並寫入檔案
     # ==========================================
-    # 1. 依舊寫入最新的設定檔給 main.py 讀取
     with open("dynamic_config.json", "w", encoding="utf-8") as f:
         json.dump(final_dynamic_config, f, indent=4, ensure_ascii=False)
         
-    # 2. 🌟 新增：將本次進化紀錄追加到獨立的歷史日誌檔中
     log_path = "data/evolution_history_log.txt"
     os.makedirs("data", exist_ok=True)
     
     now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    with open(log_path, "a", encoding="utf-8") as f:  # 使用 "a" 模式追加紀錄，不覆寫
+    with open(log_path, "a", encoding="utf-8") as f:
         f.write("==================================================\n")
         f.write(f"🕒 矩陣進化時間: {now_str}\n")
         f.write("--------------------------------------------------\n")
