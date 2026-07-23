@@ -4,14 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>AlphaTrade | 手動量化操盤指揮中心</title>
-    <!-- 讓網頁可以被加入主畫面，並隱藏 Safari 介面 -->
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <!-- 設定頂部狀態列的顏色（黑色） -->
-    <meta name="apple-mobile-web-app-status-bar-style" content="black">
-    <!-- 設定你在 iOS 桌面上的 App 名稱 -->
-    <meta name="apple-mobile-web-app-title" content="AlphaTrade">
-    <!-- 【修改點 1】新增 theme-color，強制將現代 iOS 狀態列底色設為黑色 -->
-    <meta name="theme-color" content="#030303">
     
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
@@ -39,14 +31,10 @@
         ::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.15); border-radius: 10px; }
 
         html, body {
-            /* 把底色跟漸層分開寫，這是破解 iOS 白邊的關鍵 */
-            background-color: #030303; 
-            background-image: var(--bg-gradient); 
-    
-            color: var(--text-main);
-             font-family: "Inter", "Microsoft JhengHei", sans-serif;
-             margin: 0; padding: 0; height: 100dvh; width: 100vw;
-             overflow: hidden; overscroll-behavior: none; display: flex;
+            background: var(--bg-gradient); color: var(--text-main);
+            font-family: "Inter", "Microsoft JhengHei", sans-serif;
+            margin: 0; padding: 0; height: 100dvh; width: 100vw;
+            overflow: hidden; overscroll-behavior: none; display: flex;
         }
 
         .glass-title-text {
@@ -197,11 +185,9 @@
 
         @media (max-width: 768px) {
             .mobile-only { display: flex; }
-            /* 【修改點 2】加上 env(safe-area-inset-top) 將頭部整體往下推，避開瀏海/動態島 */
-            #mobile-header { display: flex; justify-content: space-between; align-items: center; padding: env(safe-area-inset-top) 20px 0 20px; height: calc(60px + env(safe-area-inset-top)); background: rgba(10, 10, 10, 0.95); border-bottom: 1px solid rgba(255,255,255,0.06); z-index: 50; position: absolute; top: 0; left: 0; width: 100%; }
+            #mobile-header { display: flex; justify-content: space-between; align-items: center; height: 60px; padding: 0 20px; background: rgba(10, 10, 10, 0.95); border-bottom: 1px solid rgba(255,255,255,0.06); z-index: 50; position: absolute; top: 0; left: 0; width: 100%; }
             .mobile-menu-btn { background: transparent; border: none; color: #fff; font-size: 20px; cursor: pointer; padding: 10px; margin-left: -10px; z-index: 2; }
-            /* 為求垂直置中完美，將絕對定位的標題也加上頂部安全距離計算 */
-            .mobile-header-title { position: absolute; top: calc(env(safe-area-inset-top) + 20px); left: 50%; transform: translateX(-50%); font-weight: 900; letter-spacing: 3px; font-size: 16px; color: #fff; cursor: pointer; white-space: nowrap; z-index: 1; }
+            .mobile-header-title { position: absolute; left: 50%; transform: translateX(-50%); font-weight: 900; letter-spacing: 3px; font-size: 16px; color: #fff; cursor: pointer; white-space: nowrap; z-index: 1; }
             .mobile-reload-btn { width: 50px; height: 100%; cursor: pointer; z-index: 2; margin-right: -10px; position: absolute; right: 0; top: 0; }
             
             #sidebar-overlay.active { display: block; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 900; backdrop-filter: blur(2px); }
@@ -212,8 +198,7 @@
             .view-section::-webkit-scrollbar, .trade-panel::-webkit-scrollbar { display: none !important; width: 0 !important; }
             .view-section, .trade-panel { scrollbar-width: none !important; }
 
-            /* 【修改點 3】整體視圖內容區域也配合頂部安全距離往下推，避免被 Header 蓋住 */
-            .view-section { top: calc(60px + env(safe-area-inset-top)); height: calc(100dvh - 60px - env(safe-area-inset-top)); padding: 12px; padding-bottom: max(12px, env(safe-area-inset-bottom)); }
+            .view-section { top: 60px; height: calc(100dvh - 60px); padding: 12px; padding-bottom: max(12px, env(safe-area-inset-bottom)); }
             .stat-grid { grid-template-columns: repeat(2, 1fr); height: auto; margin-bottom: 5px; }
             .stat-card { padding: 12px; }
             .stat-value { font-size: 16px; }
