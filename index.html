@@ -7,7 +7,7 @@
     <!-- 讓網頁可以被加入主畫面，並隱藏 Safari 介面 -->
     <meta name="apple-mobile-web-app-capable" content="yes">
     <!-- 設定頂部狀態列的顏色（黑色） -->
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black">
     <!-- 設定你在 iOS 桌面上的 App 名稱 -->
     <meta name="apple-mobile-web-app-title" content="AlphaTrade">
     <!-- 【修改點 1】新增 theme-color，強制將現代 iOS 狀態列底色設為黑色 -->
@@ -39,10 +39,14 @@
         ::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.15); border-radius: 10px; }
 
         html, body {
-            background: var(--bg-gradient); color: var(--text-main);
-            font-family: "Inter", "Microsoft JhengHei", sans-serif;
-            margin: 0; padding: 0; height: 100dvh; width: 100vw;
-            overflow: hidden; overscroll-behavior: none; display: flex;
+            /* 把底色跟漸層分開寫，這是破解 iOS 白邊的關鍵 */
+            background-color: #030303; 
+            background-image: var(--bg-gradient); 
+    
+            color: var(--text-main);
+             font-family: "Inter", "Microsoft JhengHei", sans-serif;
+             margin: 0; padding: 0; height: 100dvh; width: 100vw;
+             overflow: hidden; overscroll-behavior: none; display: flex;
         }
 
         .glass-title-text {
