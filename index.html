@@ -729,7 +729,7 @@
             document.getElementById("live-search-list").innerHTML = `<div style="padding:10px 12px; font-size:11px; color:#888;"><i class="fa-solid fa-spinner fa-spin"></i> 搜尋 ${query}...</div>`;
             try {
                 // 已修正：使用你的專屬 Worker 進行極速搜尋
-                const proxyUrl = `https://square-moon-a3d9.kevinchang090818.workers.dev/?url=${encodeURIComponent(`https://query2.finance.yahoo.com/v1/finance/search?q=${query}&quotesCount=6`)}`;
+                const proxyUrl = `https://corsproxy.io/?${encodeURIComponent(`https://query2.finance.yahoo.com/v1/finance/search?q=${query}&quotesCount=6`)}`;
                 const res = await fetch(proxyUrl, { cache: "no-store" }); const json = await res.json();
                 if(json.quotes && json.quotes.length > 0) {
                     document.getElementById("live-search-list").innerHTML = json.quotes.map(q => `<div class="dropdown-item" onclick="selectTicker('${q.symbol}')"><div><strong style="color:#fff">${q.symbol}</strong> <span style="color:#888; font-size:11px">${q.shortname || ''}</span></div><span style="color:var(--color-acc); font-size:11px">${q.exchDisp || ''}</span></div>`).join("");
