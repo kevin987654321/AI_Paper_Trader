@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>AlphaTrade</title>
     
-    
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     
@@ -242,6 +241,7 @@
         <div class="mobile-reload-btn" onclick="location.reload()"></div>
     </div>
 
+    <!-- 主儀表板 -->
     <main id="view-dashboard" class="view-section active">
         <div class="stat-grid">
             <div class="glass-panel stat-card">
@@ -315,7 +315,7 @@
             </button>
         </div>
         <div id="cards-grid" style="display:grid; grid-template-columns:repeat(auto-fill, minmax(300px, 1fr)); gap:14px; position:relative;">
-            </div>
+        </div>
     </main>
 
     <main id="view-holdings" class="view-section">
@@ -323,7 +323,8 @@
             <div style="font-weight:bold; font-size:15px; margin-bottom:12px; white-space:nowrap;"><i class="fa-solid fa-briefcase"></i> 當前證券持倉帳務</div>
             <div class="table-responsive">
                 <table>
-                    <thead><tr><th>代號</th><th>持有股數</th><th>平均成本</th><th>當前現價</th><th>市值</th><th>未實現損益</th><th>操作</th></tr></thead>
+                    <!-- 🌟 加入損平賣價標示 -->
+                    <thead><tr><th>代號</th><th>持有股數</th><th>買入均價<br><span style="font-size:10px; font-weight:normal; color:#888;">(損平賣價)</span></th><th>當前現價</th><th>市值</th><th>未實現損益</th><th>操作</th></tr></thead>
                     <tbody id="holdings-table-body"></tbody>
                 </table>
             </div>
@@ -363,6 +364,11 @@
             <div class="glass-panel setting-item">
                 <div><div style="font-weight:bold;">證交稅率設定 (%)</div><div style="font-size:11px; color:#777; margin-top:2px;">賣出徵收，預設 0.3%</div></div>
                 <input type="number" id="cfg-tax-rate" value="0.30" step="0.05" style="width:80px; background:rgba(0,0,0,0.5); border:1px solid rgba(255,255,255,0.2); color:#fff; padding:6px; border-radius:6px; text-align:center;">
+            </div>
+            <!-- 🌟 新增十字輔助線開關 -->
+            <div class="glass-panel setting-item">
+                <div><div style="font-weight:bold;">圖表動態十字輔助線</div><div style="font-size:11px; color:#777; margin-top:2px;">按住圖表滑動時，顯示絲滑跟隨的垂直輔助線</div></div>
+                <label class="switch"><input type="checkbox" id="cfg-crosshair-show" checked><span class="slider"></span></label>
             </div>
             <div class="glass-panel setting-item">
                 <div><div style="font-weight:bold;">圖表轉折節點顯示</div><div style="font-size:11px; color:#777; margin-top:2px;">開啟以在折線圖上方顯示數據圓點</div></div>
@@ -537,16 +543,76 @@
         if(id === 'view-cards') { fetchAllCardsData(); renderCards(); }
     }
 
+    /* 🌟 1. 改良版：消滅節點殘留的觸控外掛 */
     const holdToPreviewPlugin = {
         id: 'holdToPreviewPlugin',
         beforeEvent(chart, args) {
             const e = args.event; const type = e.type;
             if (type === 'mousedown' || type === 'touchstart') chart._isPointerHolding = true;
-            else if (type === 'mouseup' || type === 'touchend' || type === 'touchcancel' || type === 'mouseout') { chart._isPointerHolding = false; chart.tooltip.setActiveElements([], {x: 0, y: 0}); chart.update(); return false; }
-            if (type === 'mousemove' || type === 'touchmove') { if (!chart._isPointerHolding) return false; }
+            else if (type === 'mouseup' || type === 'touchend' || type === 'touchcancel' || type === 'mouseout' || type === 'mouseleave') { 
+                chart._isPointerHolding = false; 
+                chart.setActiveElements([]); // 這裡消除殘留小圈
+                chart.tooltip.setActiveElements([], {x: 0, y: 0}); 
+                chart.update(); 
+                return false; 
+            }
+            if (type === 'mousemove' || type === 'touchmove') { 
+                if (!chart._isPointerHolding) {
+                    chart.setActiveElements([]); // 防止單純滑過時顯示小圈
+                    chart.tooltip.setActiveElements([], {x: 0, y: 0});
+                    return false;
+                }
+            }
         }
     };
     Chart.register(holdToPreviewPlugin);
+
+    /* 🌟 2. 新增：絲滑動態十字追蹤線外掛 */
+    const smoothCrosshairPlugin = {
+        id: 'smoothCrosshairPlugin',
+        afterDraw(chart) {
+            const toggle = document.getElementById("cfg-crosshair-show");
+            if (!toggle || !toggle.checked) return;
+
+            const activeElements = chart.getActiveElements();
+            let targetX = null;
+            let activeColor = null;
+
+            if (activeElements.length > 0 && chart._isPointerHolding) {
+                targetX = activeElements[0].element.x;
+                activeColor = chart.data.datasets[activeElements[0].datasetIndex].borderColor;
+                chart._crosshairTargetOpacity = 1;
+            } else {
+                chart._crosshairTargetOpacity = 0;
+            }
+
+            if (chart._crosshairX === undefined) chart._crosshairX = targetX;
+            if (chart._crosshairOpacity === undefined) chart._crosshairOpacity = 0;
+
+            if (targetX !== null && chart._crosshairX === null) chart._crosshairX = targetX;
+            else if (targetX !== null) chart._crosshairX += (targetX - chart._crosshairX) * 0.25;
+
+            chart._crosshairOpacity += (chart._crosshairTargetOpacity - chart._crosshairOpacity) * 0.2;
+
+            if (chart._crosshairOpacity > 0.01 && chart._crosshairX !== null) {
+                const ctx = chart.ctx;
+                ctx.save();
+                ctx.beginPath();
+                ctx.moveTo(chart._crosshairX, chart.chartArea.top);
+                ctx.lineTo(chart._crosshairX, chart.chartArea.bottom);
+                ctx.lineWidth = 1; // 粗細只有一半
+                ctx.strokeStyle = activeColor || '#fff';
+                ctx.globalAlpha = chart._crosshairOpacity * 0.8;
+                ctx.stroke();
+                ctx.restore();
+
+                if (Math.abs(chart._crosshairX - targetX) > 0.5 || Math.abs(chart._crosshairOpacity - chart._crosshairTargetOpacity) > 0.05) {
+                    requestAnimationFrame(() => chart.draw());
+                }
+            }
+        }
+    };
+    Chart.register(smoothCrosshairPlugin);
 
     const DATA_KEY = "ALPHATRADE_MANUAL_DATA";
     let state = { cash: 1000000, holdings: {}, ledger: [], recentTickers: ["NVDA", "2330.TW", "TSLA"], cardTickers: ["NVDA", "2330.TW"], navHistory: { labels: [], data: [] } };
@@ -557,7 +623,10 @@
     function initData() {
         const saved = localStorage.getItem(DATA_KEY);
         if (saved) { try { state = JSON.parse(saved); state.cardTickers = state.cardTickers || ["NVDA", "2330.TW"]; } catch(e) {} } else { recordNavSnapshot(); saveData(); }
+        
         const savedShow = localStorage.getItem('SETTING_NODE_SHOW'); if (savedShow !== null) document.getElementById("cfg-node-show").checked = savedShow === 'true'; else document.getElementById("cfg-node-show").checked = true;
+        const savedCrosshair = localStorage.getItem('SETTING_CROSSHAIR_SHOW'); if (savedCrosshair !== null) document.getElementById("cfg-crosshair-show").checked = savedCrosshair === 'true'; else document.getElementById("cfg-crosshair-show").checked = true;
+        
         const savedVal = localStorage.getItem('SETTING_NODE_VAL');
         if (savedVal !== null) {
             document.getElementById("cfg-node-slider").value = (savedVal === 'All') ? 60 : savedVal; document.getElementById("cfg-node-val").value = savedVal;
@@ -567,36 +636,27 @@
         document.getElementById("trade-ticker").value = currentTicker; document.getElementById("m-chart-ticker").innerText = currentTicker;
         renderRecentTickers(); renderCards();
     }
+    
     function saveData() { localStorage.setItem(DATA_KEY, JSON.stringify(state)); updateAllViews(); renderCards(); }
     function resetAccount() { if(confirm("確定還原為 100 萬起始金額？")) { localStorage.removeItem(DATA_KEY); state = { cash: 1000000, holdings: {}, ledger: [], recentTickers: ["NVDA", "2330.TW"], cardTickers: ["NVDA", "2330.TW"], navHistory: { labels: [], data: [] } }; initData(); } }
 
-    /* 🌟 JSON 備份與還原功能 */
     function exportData() {
-        const dataStr = JSON.stringify(state, null, 2);
-        const blob = new Blob([dataStr], { type: "application/json" });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        const date = new Date().toISOString().slice(0, 10).replace(/-/g, "");
-        a.href = url;
-        a.download = `AlphaTrade_Backup_${date}.json`;
+        const dataStr = JSON.stringify(state, null, 2), blob = new Blob([dataStr], { type: "application/json" }), url = URL.createObjectURL(blob), a = document.createElement("a");
+        const date = new Date().toISOString().slice(0, 10).replace(/-/g, ""); a.href = url; a.download = `AlphaTrade_Backup_${date}.json`;
         document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
         triggerDynamicFeedback("已成功匯出備份檔案", "buy", null, "EXPORTED");
     }
 
     function importData(event) {
-        const file = event.target.files[0]; if (!file) return;
-        const reader = new FileReader();
+        const file = event.target.files[0]; if (!file) return; const reader = new FileReader();
         reader.onload = function(e) {
             try {
                 const importedState = JSON.parse(e.target.result);
                 if (importedState && typeof importedState.cash === 'number') {
-                    state = importedState;
-                    state.cardTickers = state.cardTickers || []; state.recentTickers = state.recentTickers || [];
-                    state.holdings = state.holdings || {}; state.ledger = state.ledger || [];
-                    saveData(); fetchAllCardsData();
-                    triggerDynamicFeedback("資料已成功還原！", "buy", null, "RESTORED");
+                    state = importedState; state.cardTickers = state.cardTickers || []; state.recentTickers = state.recentTickers || []; state.holdings = state.holdings || {}; state.ledger = state.ledger || [];
+                    saveData(); fetchAllCardsData(); triggerDynamicFeedback("資料已成功還原！", "buy", null, "RESTORED");
                 } else alert("檔案格式錯誤或損毀！");
-            } catch (err) { alert("檔案解析失敗！"); }
+            } catch (err) { alert("檔案解析失敗！請確保貼上完整無重複內容。"); }
             event.target.value = ''; 
         };
         reader.readAsText(file);
@@ -604,10 +664,7 @@
 
     let cDragTimer, cIsDragging = false, cDragCard = null, cPlaceholder = null, cStartX = 0, cStartY = 0, cElemStartX = 0, cElemStartY = 0;
 
-    function attachCardDragEvents() {
-        document.querySelectorAll('.draggable-card').forEach(card => { card.addEventListener('touchstart', handleCardPointerDown, {passive: false}); card.addEventListener('mousedown', handleCardPointerDown); });
-    }
-
+    function attachCardDragEvents() { document.querySelectorAll('.draggable-card').forEach(card => { card.addEventListener('touchstart', handleCardPointerDown, {passive: false}); card.addEventListener('mousedown', handleCardPointerDown); }); }
     function handleCardPointerDown(e) {
         if (!isCardEditMode) return; if (e.target.closest('.delete-btn')) return;
         const clientX = e.touches ? e.touches[0].clientX : e.clientX, clientY = e.touches ? e.touches[0].clientY : e.clientY, card = e.currentTarget;
@@ -616,16 +673,13 @@
         const cancelMove = (eMove) => { const mx = eMove.touches ? eMove.touches[0].clientX : eMove.clientX, my = eMove.touches ? eMove.touches[0].clientY : eMove.clientY; if(Math.abs(mx - clientX) > 10 || Math.abs(my - clientY) > 10) cancelDrag(); };
         document.addEventListener('touchend', cancelDrag); document.addEventListener('mouseup', cancelDrag); document.addEventListener('touchmove', cancelMove, {passive: true}); document.addEventListener('mousemove', cancelMove);
     }
-
     function startCardDrag(card, startX, startY) {
         if(navigator.vibrate) navigator.vibrate(50);
-        cIsDragging = true; cPlaceholder = card; const rect = card.getBoundingClientRect();
-        cDragCard = card.cloneNode(true);
+        cIsDragging = true; cPlaceholder = card; const rect = card.getBoundingClientRect(); cDragCard = card.cloneNode(true);
         cDragCard.style.position = 'fixed'; cDragCard.style.top = rect.top + 'px'; cDragCard.style.left = rect.left + 'px'; cDragCard.style.width = rect.width + 'px'; cDragCard.style.height = rect.height + 'px'; cDragCard.style.zIndex = '10000'; cDragCard.style.margin = '0'; cDragCard.style.boxShadow = '0 20px 40px rgba(0,0,0,0.8), 0 0 0 2px var(--color-acc)'; cDragCard.style.transform = 'scale(1.05)'; cDragCard.style.transition = 'transform 0.2s'; cDragCard.style.pointerEvents = 'none';
         document.body.appendChild(cDragCard); cPlaceholder.style.opacity = '0'; cStartX = startX; cStartY = startY; cElemStartX = rect.left; cElemStartY = rect.top;
         document.addEventListener('touchmove', handleCardPointerMove, {passive: false}); document.addEventListener('mousemove', handleCardPointerMove); document.addEventListener('touchend', handleCardPointerUp); document.addEventListener('mouseup', handleCardPointerUp);
     }
-
     function handleCardPointerMove(e) {
         if (!cIsDragging) return; e.preventDefault();
         const clientX = e.touches ? e.touches[0].clientX : e.clientX, clientY = e.touches ? e.touches[0].clientY : e.clientY;
@@ -633,7 +687,6 @@
         const targetCard = document.elementsFromPoint(clientX, clientY).find(el => el.classList.contains('draggable-card') && el !== cPlaceholder);
         if (targetCard) swapCardNodes(cPlaceholder, targetCard);
     }
-
     function swapCardNodes(nodeA, nodeB) {
         const parent = nodeA.parentNode, rectB = nodeB.getBoundingClientRect(), siblingA = nodeA.nextSibling === nodeB ? nodeA : nodeA.nextSibling;
         nodeB.parentNode.insertBefore(nodeA, nodeB); parent.insertBefore(nodeB, siblingA);
@@ -641,7 +694,6 @@
         nodeB.style.transform = `translate(${diffX}px, ${diffY}px)`; nodeB.style.transition = 'none';
         requestAnimationFrame(() => { nodeB.style.transform = ''; nodeB.style.transition = 'transform 0.3s cubic-bezier(0.25, 0.8, 0.25, 1)'; });
     }
-
     function handleCardPointerUp(e) {
         if (!cIsDragging) return; cIsDragging = false; const rect = cPlaceholder.getBoundingClientRect();
         cDragCard.style.transition = 'all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1)'; cDragCard.style.left = rect.left + 'px'; cDragCard.style.top = rect.top + 'px'; cDragCard.style.transform = 'scale(1)';
@@ -672,8 +724,7 @@
         if (!document.getElementById('view-cards').classList.contains('active')) return;
         for (const t of state.cardTickers) {
             try {
-                // 已修正
-                const res = await fetch(`https://corsproxy.io/?${encodeURIComponent(`https://query1.finance.yahoo.com/v8/finance/chart/${t}?range=1mo&interval=1d`)}`, { cache: "no-store" });
+                const res = await fetch(`https://api.allorigins.win/raw?url=${encodeURIComponent(`https://query1.finance.yahoo.com/v8/finance/chart/${t}?range=1mo&interval=1d`)}`, { cache: "no-store" });
                 if(res.ok) { 
                     const json = await res.json(), result = json.chart.result[0], price = result.meta.regularMarketPrice, prices = result.indicators.quote[0].close || [], rsi = calculateRSI(prices.filter(p => p !== null), 14);
                     cardsDataCache[t] = { price, rsi };
@@ -717,19 +768,23 @@
     }
 
     function addToRecentlySelected(t) { state.recentTickers = [t, ...state.recentTickers.filter(item => item !== t)].slice(0, 5); saveData(); renderRecentTickers(); }
-    function renderRecentTickers() { document.getElementById("recent-tickers-list").innerHTML = state.recentTickers.map(t => `<div class="dropdown-item" onclick="selectTicker('${t}')"><span style="font-weight:bold; color:var(--color-buy)">${t}</span><span style="color:#888; font-size:11px;">最近選取</span></div>`).join(""); }
+    function renderRecentTickers() { document.getElementById("recent-tickers-list").innerHTML = state.recentTickers.map(t => `
+            <div class="dropdown-item" onclick="selectTicker('${t}')">
+                <span style="font-weight:bold; color:var(--color-buy)">${t}</span>
+                <span style="color:#888; font-size:11px;">最近選取</span>
+            </div>`).join(""); }
 
     const tickerInput = document.getElementById("trade-ticker");
     tickerInput.addEventListener("input", (e) => {
         const query = e.target.value.trim().toUpperCase(); document.getElementById("ticker-dropdown").classList.add("show");
         document.getElementById("recent-group-title").style.display = 'none'; document.getElementById("recent-tickers-list").style.display = 'none';
+
         clearTimeout(searchDebounceTimer);
         searchDebounceTimer = setTimeout(async () => {
             if(!query) { document.getElementById("live-search-list").innerHTML = `<div style="padding:10px 12px; font-size:11px; color:#666;">輸入代號自動撈取標的...</div>`; return; }
             document.getElementById("live-search-list").innerHTML = `<div style="padding:10px 12px; font-size:11px; color:#888;"><i class="fa-solid fa-spinner fa-spin"></i> 搜尋 ${query}...</div>`;
             try {
-                // 已修正
-                const proxyUrl = `https://corsproxy.io/?${encodeURIComponent(`https://query2.finance.yahoo.com/v1/finance/search?q=${query}&quotesCount=6`)}`;
+                const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(`https://query2.finance.yahoo.com/v1/finance/search?q=${query}&quotesCount=6`)}`;
                 const res = await fetch(proxyUrl, { cache: "no-store" }); const json = await res.json();
                 if(json.quotes && json.quotes.length > 0) {
                     document.getElementById("live-search-list").innerHTML = json.quotes.map(q => `<div class="dropdown-item" onclick="selectTicker('${q.symbol}')"><div><strong style="color:#fff">${q.symbol}</strong> <span style="color:#888; font-size:11px">${q.shortname || ''}</span></div><span style="color:var(--color-acc); font-size:11px">${q.exchDisp || ''}</span></div>`).join("");
@@ -757,8 +812,7 @@
 
     async function fetchRealPrice(ticker) {
         try {
-            // 已修正
-            const proxyUrl = `https://corsproxy.io/?${encodeURIComponent(`https://query1.finance.yahoo.com/v8/finance/chart/${ticker}`)}`;
+            const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(`https://query1.finance.yahoo.com/v8/finance/chart/${ticker}`)}`;
             const res = await fetch(proxyUrl, { cache: "no-store" });
             if(res.ok) { 
                 const json = await res.json(), price = json.chart.result[0].meta.regularMarketPrice; 
@@ -816,8 +870,7 @@
         let range = '1d', interval = '5m';
         switch(tf) { case '1D': range = '1d'; interval = '5m'; break; case '1W': range = '5d'; interval = '15m'; break; case '1M': range = '1mo'; interval = '1d'; break; case '3M': range = '3mo'; interval = '1d'; break; case '1Y': range = '1y'; interval = '1d'; break; case 'All': range = '5y'; interval = '1wk'; break; }
         try {
-            // 已修正
-            const proxyUrl = `https://corsproxy.io/?${encodeURIComponent(`https://query1.finance.yahoo.com/v8/finance/chart/${ticker}?range=${range}&interval=${interval}`)}`;
+            const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(`https://query1.finance.yahoo.com/v8/finance/chart/${ticker}?range=${range}&interval=${interval}`)}`;
             const res = await fetch(proxyUrl, { cache: "no-store" });
             const json = await res.json(), result = json.chart.result[0], timestamps = result.timestamp || [], prices = result.indicators.quote[0].close || [];
             let arrPrices = [], arrLabels = [];
@@ -916,12 +969,25 @@
         document.getElementById("nav-pnl").innerText = `${pnl >= 0 ? '+' : ''}$ ${Math.floor(pnl).toLocaleString()} (${totalCost > 0 ? ((pnl/totalCost)*100).toFixed(1) : 0}%)`;
         document.getElementById("nav-pnl").style.color = pnl >= 0 ? "var(--color-buy)" : "var(--color-sell)";
 
+        // 🌟 更新持倉表格 (加入精算損平價)
         document.getElementById("holdings-table-body").innerHTML = Object.keys(state.holdings).length ? Object.keys(state.holdings).map(t => {
             const h = state.holdings[t], curP = (t === currentTicker && currentRealPrice !== null) ? currentRealPrice : h.avgPrice, val = h.shares * curP, pnl = val - (h.shares * h.avgPrice);
-            return `<tr><td style="font-weight:bold; color:var(--color-acc)">${t}</td><td>${h.shares}</td><td>$${h.avgPrice.toFixed(1)}</td><td>$${curP.toFixed(1)}</td><td>$${Math.floor(val).toLocaleString()}</td><td style="color:${pnl>=0?'var(--color-buy)':'var(--color-sell)'}">${pnl>=0?'+':''}$${Math.floor(pnl)}</td><td><button onclick="selectTicker('${t}')" style="background:rgba(255,255,255,0.08); border:none; color:#fff; padding:4px 8px; border-radius:4px; cursor:pointer;">交易</button></td></tr>`;
-        }).join("") : `<tr><td colspan="7" style="text-align:center; color:#555; padding:30px;">尚無持股</td></tr>`;
+            const feeRate = parseFloat(document.getElementById("cfg-fee-rate").value) / 100, taxRate = parseFloat(document.getElementById("cfg-tax-rate").value) / 100;
+            const breakEvenPrice = h.avgPrice / (1 - feeRate - taxRate); // 🌟 損平價精算
 
-        document.getElementById("ledger-table-body").innerHTML = state.ledger.length ? state.ledger.map(r => `<tr><td>${r.time}</td><td><span class="badge ${r.action==='BUY'?'badge-buy':'badge-sell'}">${r.action}</span></td><td style="font-weight:bold;">${r.ticker}</td><td>$${r.price.toFixed(1)}</td><td>${r.shares}</td><td>$${r.fee.toFixed(1)}</td><td style="font-weight:bold;">$${Math.floor(r.total).toLocaleString()}</td></tr>`).join("") : `<tr><td colspan="7" style="text-align:center; color:#555; padding:30px;">尚無紀錄</td></tr>`;
+            return `<tr>
+                <td style="font-weight:bold; color:var(--color-acc)">${t}</td><td>${h.shares}</td>
+                <td>
+                    <div style="font-weight:bold;">$${h.avgPrice.toFixed(2)}</div>
+                    <div style="font-size:10px; color:var(--color-warn); margin-top:2px;">低於 $${breakEvenPrice.toFixed(2)} 虧損</div>
+                </td>
+                <td>$${curP.toFixed(2)}</td><td>$${Math.floor(val).toLocaleString()}</td>
+                <td style="color:${pnl>=0?'var(--color-buy)':'var(--color-sell)'}; font-weight:bold;">${pnl>=0?'+':''}$${Math.floor(pnl).toLocaleString()}</td>
+                <td><button onclick="selectTicker('${t}')" style="background:rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.15); color:#fff; padding:6px 12px; border-radius:6px; cursor:pointer; font-weight:bold; transition:all 0.2s;">即時交易</button></td>
+            </tr>`;
+        }).join("") : `<tr><td colspan="7" style="text-align:center; color:#555; padding:40px;">尚未持有任何證券</td></tr>`;
+
+        document.getElementById("ledger-table-body").innerHTML = state.ledger.length ? state.ledger.map(r => `<tr><td>${r.time}</td><td><span class="badge ${r.action==='BUY'?'badge-buy':'badge-sell'}">${r.action}</span></td><td style="font-weight:bold;">${r.ticker}</td><td>$${r.price.toFixed(1)}</td><td>${r.shares}</td><td>$${r.fee.toFixed(1)}</td><td style="font-weight:bold;">$${Math.floor(r.total).toLocaleString()}</td></tr>`).join("") : `<tr><td colspan="7" style="text-align:center; color:#555; padding:40px;">尚無紀錄</td></tr>`;
         renderAllCharts();
     }
 
@@ -955,6 +1021,12 @@
     }
 
     document.getElementById("cfg-node-show").addEventListener("change", (e) => { localStorage.setItem('SETTING_NODE_SHOW', e.target.checked); document.getElementById("node-settings-wrapper").classList.toggle("disabled", !e.target.checked); renderAllCharts(); });
+    
+    // 🌟 儲存十字線開關設定
+    document.getElementById("cfg-crosshair-show").addEventListener("change", (e) => {
+        localStorage.setItem('SETTING_CROSSHAIR_SHOW', e.target.checked);
+    });
+
     document.getElementById("cfg-node-slider").addEventListener("input", (e) => {
         const val = parseInt(e.target.value), displayVal = (val >= 60) ? 'All' : val; document.getElementById("cfg-node-val").value = displayVal; localStorage.setItem('SETTING_NODE_VAL', displayVal);
         const pct = (val - e.target.min) / (e.target.max - e.target.min); document.getElementById("jelly-thumb").style.left = `${pct * 162}px`; renderAllCharts();
