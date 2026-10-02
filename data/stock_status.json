@@ -1,11 +1,11 @@
 {
     "2330.TW": {
-        "price": 2500.0,
-        "rsi": 60.20479370864433,
+        "price": 2505.0,
+        "rsi": 61.19183941894707,
         "universes": {
             "DYN_1": {
                 "shares": 4,
-                "value": 10000.0,
+                "value": 10020.0,
                 "stop_price": 2399.1510535198354,
                 "est_buy_shares": 12,
                 "action": "🤝 抱牢波段"
@@ -19,7 +19,7 @@
             },
             "STA_1": {
                 "shares": 4,
-                "value": 10000.0,
+                "value": 10020.0,
                 "stop_price": 2399.1510535198354,
                 "est_buy_shares": 12,
                 "action": "🤝 抱牢波段"
@@ -34,33 +34,33 @@
         }
     },
     "2317.TW": {
-        "price": 250.5,
-        "rsi": 49.27702956346729,
+        "price": 251.0,
+        "rsi": 49.95497794605984,
         "universes": {
             "DYN_1": {
                 "shares": 44,
-                "value": 11022.0,
+                "value": 11044.0,
                 "stop_price": 240.4566603870117,
                 "est_buy_shares": 90,
                 "action": "🤝 抱牢波段"
             },
             "DYN_2": {
                 "shares": 47,
-                "value": 11773.5,
+                "value": 11797.0,
                 "stop_price": 245.63777359134113,
                 "est_buy_shares": 106,
                 "action": "🤝 抱牢波段"
             },
             "STA_1": {
                 "shares": 44,
-                "value": 11022.0,
+                "value": 11044.0,
                 "stop_price": 240.4566603870117,
                 "est_buy_shares": 90,
                 "action": "🤝 抱牢波段"
             },
             "STA_2": {
                 "shares": 47,
-                "value": 11773.5,
+                "value": 11797.0,
                 "stop_price": 245.63777359134113,
                 "est_buy_shares": 106,
                 "action": "🤝 抱牢波段"
@@ -68,8 +68,8 @@
         }
     },
     "2454.TW": {
-        "price": 4940.0,
-        "rsi": 59.99759466618502,
+        "price": 4935.0,
+        "rsi": 59.81580774391765,
         "universes": {
             "DYN_1": {
                 "shares": 0,
@@ -136,42 +136,42 @@
         }
     },
     "2382.TW": {
-        "price": 330.5,
-        "rsi": 44.74607067750659,
+        "price": 331.0,
+        "rsi": 45.17452860325921,
         "universes": {
             "DYN_1": {
                 "shares": 28,
-                "value": 9254.0,
-                "stop_price": 323.83930021832947,
-                "est_buy_shares": 59,
+                "value": 9268.0,
+                "stop_price": 323.73215736118664,
+                "est_buy_shares": 58,
                 "action": "🤝 抱牢波段"
             },
             "DYN_2": {
                 "shares": 0,
                 "value": 0.0,
                 "stop_price": 0.0,
-                "est_buy_shares": 70,
+                "est_buy_shares": 69,
                 "action": "觀望"
             },
             "STA_1": {
                 "shares": 28,
-                "value": 9254.0,
-                "stop_price": 323.83930021832947,
-                "est_buy_shares": 59,
+                "value": 9268.0,
+                "stop_price": 323.73215736118664,
+                "est_buy_shares": 58,
                 "action": "🤝 抱牢波段"
             },
             "STA_2": {
                 "shares": 0,
                 "value": 0.0,
                 "stop_price": 0.0,
-                "est_buy_shares": 70,
+                "est_buy_shares": 69,
                 "action": "觀望"
             }
         }
     },
     "2881.TW": {
-        "price": 150.0,
-        "rsi": 56.138836955871525,
+        "price": 150.5,
+        "rsi": 57.30300710760151,
         "universes": {
             "DYN_1": {
                 "shares": 0,
@@ -204,8 +204,8 @@
         }
     },
     "2886.TW": {
-        "price": 48.54999923706055,
-        "rsi": 43.22535323720019,
+        "price": 48.650001525878906,
+        "rsi": 43.79207595795971,
         "universes": {
             "DYN_1": {
                 "shares": 0,
@@ -238,12 +238,12 @@
         }
     },
     "2891.TW": {
-        "price": 67.5,
-        "rsi": 48.101328148629584,
+        "price": 67.5999984741211,
+        "rsi": 48.57998372732528,
         "universes": {
             "DYN_1": {
                 "shares": 174,
-                "value": 11745.0,
+                "value": 11762.39973449707,
                 "stop_price": 66.51324795809492,
                 "est_buy_shares": 299,
                 "action": "🤝 抱牢波段"
@@ -257,7 +257,7 @@
             },
             "STA_1": {
                 "shares": 174,
-                "value": 11745.0,
+                "value": 11762.39973449707,
                 "stop_price": 66.51324795809492,
                 "est_buy_shares": 299,
                 "action": "🤝 抱牢波段"
@@ -272,33 +272,33 @@
         }
     },
     "2603.TW": {
-        "price": 239.5,
-        "rsi": 55.40182230516062,
+        "price": 240.5,
+        "rsi": 56.552195717504794,
         "universes": {
             "DYN_1": {
                 "shares": 52,
-                "value": 12454.0,
+                "value": 12506.0,
                 "stop_price": 225.64430703584915,
                 "est_buy_shares": 80,
                 "action": "🤝 抱牢波段"
             },
             "DYN_2": {
                 "shares": 52,
-                "value": 12454.0,
+                "value": 12506.0,
                 "stop_price": 231.42953802389943,
                 "est_buy_shares": 95,
                 "action": "🤝 抱牢波段"
             },
             "STA_1": {
                 "shares": 52,
-                "value": 12454.0,
+                "value": 12506.0,
                 "stop_price": 225.64430703584915,
                 "est_buy_shares": 80,
                 "action": "🤝 抱牢波段"
             },
             "STA_2": {
                 "shares": 52,
-                "value": 12454.0,
+                "value": 12506.0,
                 "stop_price": 231.42953802389943,
                 "est_buy_shares": 95,
                 "action": "🤝 抱牢波段"
