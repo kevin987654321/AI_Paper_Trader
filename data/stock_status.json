@@ -136,8 +136,8 @@
         }
     },
     "2382.TW": {
-        "price": 281.5,
-        "rsi": 44.23441739098571,
+        "price": 281.0,
+        "rsi": 43.93550976384076,
         "universes": {
             "DYN_1": {
                 "shares": 0,
@@ -170,8 +170,8 @@
         }
     },
     "2881.TW": {
-        "price": 143.5,
-        "rsi": 43.41563560562535,
+        "price": 143.0,
+        "rsi": 42.93003474582045,
         "universes": {
             "DYN_1": {
                 "shares": 0,
@@ -204,42 +204,42 @@
         }
     },
     "2886.TW": {
-        "price": 53.5,
-        "rsi": 53.11217319487947,
+        "price": 54.79999923706055,
+        "rsi": 56.881420600216074,
         "universes": {
             "DYN_1": {
                 "shares": 0,
                 "value": 0.0,
                 "stop_price": 0.0,
-                "est_buy_shares": 419,
+                "est_buy_shares": 403,
                 "action": "觀望"
             },
             "DYN_2": {
                 "shares": 0,
                 "value": 0.0,
                 "stop_price": 0.0,
-                "est_buy_shares": 428,
+                "est_buy_shares": 412,
                 "action": "觀望"
             },
             "STA_1": {
                 "shares": 0,
                 "value": 0.0,
                 "stop_price": 0.0,
-                "est_buy_shares": 419,
+                "est_buy_shares": 403,
                 "action": "觀望"
             },
             "STA_2": {
                 "shares": 0,
                 "value": 0.0,
                 "stop_price": 0.0,
-                "est_buy_shares": 428,
+                "est_buy_shares": 412,
                 "action": "觀望"
             }
         }
     },
     "2891.TW": {
-        "price": 69.30000305175781,
-        "rsi": 44.233892710705554,
+        "price": 69.9000015258789,
+        "rsi": 45.351588300467526,
         "universes": {
             "DYN_1": {
                 "shares": 0,
@@ -272,8 +272,8 @@
         }
     },
     "2603.TW": {
-        "price": 244.0,
-        "rsi": 44.446299703446435,
+        "price": 242.0,
+        "rsi": 42.89349230177845,
         "universes": {
             "DYN_1": {
                 "shares": 0,
@@ -306,8 +306,8 @@
         }
     },
     "2002.TW": {
-        "price": 17.850000381469727,
-        "rsi": 40.57280987368957,
+        "price": 17.799999237060547,
+        "rsi": 39.70141764734565,
         "universes": {
             "DYN_1": {
                 "shares": 0,
